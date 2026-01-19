@@ -1,0 +1,14 @@
+# Secrets
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Node / frontend
+node_modules/
+
+# OS junk
+.DS_Store
