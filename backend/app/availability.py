@@ -1,100 +1,98 @@
 from datetime import datetime, time, timedelta
 from typing import List, Tuple
+from zoneinfo import ZoneInfo
 
-def parse_event(event) -> Tuple[datetime, datetime]:
+PST = ZoneInfo("America/Los_Angeles")
+
+def parse_event(event):
     start = event["start"]
     end = event["end"]
 
     if "dateTime" in start:
-        start_dt = datetime.fromisoformat(start["dateTime"])
-        end_dt = datetime.fromisoformat(end["dateTime"])
+        start_dt = datetime.fromisoformat(start["dateTime"]).astimezone(PST)
+        end_dt = datetime.fromisoformat(end["dateTime"]).astimezone(PST)
     else:
-        # All-day event
-        start_dt = datetime.fromisoformat(start["date"])
-        end_dt = datetime.fromisoformat(end["date"])
+        # all-day events block the whole day
+        start_dt = datetime.fromisoformat(start["date"]).replace(tzinfo=PST)
+        end_dt = datetime.fromisoformat(end["date"]).replace(tzinfo=PST)
 
     return start_dt, end_dt
-
-def normalize_datetime(dt):
-    """
-    Convert timezone-aware datetimes to naive datetimes.
-    Assumes local time for this app.
-    """
-    if isinstance(dt, datetime) and dt.tzinfo is not None:
-        return dt.replace(tzinfo=None)
-    return dt
 
 
 def merge_intervals(intervals):
     if not intervals:
         return []
 
-    normalized = []
-    for start, end in intervals:
-        start = normalize_datetime(start)
-        end = normalize_datetime(end)
-        normalized.append((start, end))
+    intervals.sort(key=lambda x: x[0])
+    merged = [intervals[0]]
 
-    # Safe to sort now
-    normalized.sort(key=lambda x: x[0])
+    for start, end in intervals[1:]:
+        last_start, last_end = merged[-1]
 
-    merged = [normalized[0]]
-
-    for current in normalized[1:]:
-        last = merged[-1]
-
-        if current[0] <= last[1]:
-            merged[-1] = (last[0], max(last[1], current[1]))
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
         else:
-            merged.append(current)
+            merged.append((start, end))
 
     return merged
 
 
+
+from zoneinfo import ZoneInfo
+
+PST = ZoneInfo("America/Los_Angeles")
+
 def find_free_time(
     busy_intervals,
-    day_start: time,
-    day_end: time,
-    min_minutes: int = 30
+    target_date,
+    day_start,
+    day_end,
+    min_minutes=30
 ):
-    free_slots = []
-    today = datetime.now().date()
+    free = []
     min_duration = timedelta(minutes=min_minutes)
 
-    merged_busy = merge_intervals(busy_intervals)
+    now_pst = datetime.now(PST)
 
-    current = datetime.combine(today, day_start)
+    start_dt = datetime.combine(target_date, day_start, tzinfo=PST)
+    end_dt = datetime.combine(target_date, day_end, tzinfo=PST)
 
-    for start, end in merged_busy:
+    # If today, don’t look at past time
+    if target_date == now_pst.date():
+        start_dt = max(start_dt, now_pst)
+
+    # Busy blocks only for this date
+    day_busy = [
+        (s, e) for s, e in busy_intervals
+        if s.date() == target_date
+    ]
+
+    merged = merge_intervals(day_busy)
+
+    current = start_dt
+
+    for start, end in merged:
         if start > current:
-            slot = (current, start)
-            if slot[1] - slot[0] >= min_duration:
-                free_slots.append(slot)
+            if start - current >= min_duration:
+                free.append((current, start))
         current = max(current, end)
 
-    end_of_day = datetime.combine(today, day_end)
-    if current < end_of_day:
-        slot = (current, end_of_day)
-        if slot[1] - slot[0] >= min_duration:
-            free_slots.append(slot)
+    if current < end_dt and end_dt - current >= min_duration:
+        free.append((current, end_dt))
 
-    return free_slots
+    return free
 
 def score_slot(start: datetime, end: datetime) -> int:
     duration_minutes = int((end - start).total_seconds() / 60)
 
-    # Base score from duration
     score = duration_minutes
-
     hour = start.hour
 
-    # Time-of-day preference
     if 10 <= hour <= 18:
-        score += 100     # prime hours
+        score += 100
     elif 8 <= hour < 10 or 18 < hour <= 21:
-        score += 40      # acceptable
+        score += 40
     else:
-        score -= 50      # awkward hours
+        score -= 50
 
     return score
-

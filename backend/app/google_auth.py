@@ -70,7 +70,7 @@ def callback(request: Request):
     # Store Google Calendar busy times for later merging
     request.app.state.google_busy = busy
 
-    return RedirectResponse("http://localhost:5500/frontend/index.html")
+    return RedirectResponse("http://localhost:5173")
 
 @router.get("/auth/status")
 def google_status(request: Request):

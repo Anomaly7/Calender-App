@@ -1,83 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Calendar Availability Finder</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-    <div class="google-connect">
-        <button id="googleBtn" onclick="connectGoogle()">
-            Connect Google Calendar
-        </button>
-
-        <button id="googleDisconnectBtn" onclick="disconnectGoogle()" style="display:none;">
-            Disconnect
-        </button>
-
-        <span id="googleStatus">Not connected</span>
-    </div>
-
-
-  <div class="container">
-    <h1>Find Shared Free Time</h1>
-    <label>Day starts at</label>
-
-    <input type="time" id="dayStart" value="08:00" />
-
-    <label>Day ends at</label>
-    <input type="time" id="dayEnd" value="22:00" />
-
-    <label>Minimum meeting length (minutes)</label>
-    <input type="number" id="minMinutes" value="30" />
-
-    <label>Users busy times (JSON)</label>
-    <textarea id="busyInput" rows="10">
-        [
-        [
-            ["2026-01-18T09:00:00", "2026-01-18T11:00:00"]
-        ],
-        [
-            ["2026-01-18T10:00:00", "2026-01-18T12:00:00"]
-        ]
-        ]
-    </textarea>
-
-    <button onclick="findAvailability()">Find Best Times</button>
-
-    <h2>Ranked Free Time</h2>
-    <h2>Best Meeting Times</h2>
-    <div class="legend">
-    <div class="legend-item">
-        <span class="legend-color user1"></span>
-        <span>User 1 (Busy)</span>
-    </div>
-    <div class="legend-item">
-        <span class="legend-color user2"></span>
-        <span>User 2 (Busy)</span>
-    </div>
-    <div class="legend-item">
-        <span class="legend-color free"></span>
-        <span>Free Time</span>
-    </div>
-    <div class="legend-item">
-        <span class="legend-color best"></span>
-        <span>Best Option</span>
-    </div>
-    </div>
-    <div class="calendar">
-    <div class="hours">
-        <!-- hours injected by JS -->
-    </div>
-    <div class="grid" id="calendarGrid">
-        <!-- slots injected by JS -->
-    </div>
-    </div>
-
-    <div id="results" class="results"></div>
-
-  </div>
-
-  <script src="script.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
