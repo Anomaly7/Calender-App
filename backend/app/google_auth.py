@@ -98,7 +98,7 @@ def callback(request: Request):
     conn.commit()
 
 
-    return RedirectResponse(f"http://localhost:5173?user={user_id}")
+    return RedirectResponse(f"https://calender-app-mm4q.onrender.com/auth/logout?user={user_id}")
 
 @router.get("/auth/status")
 def google_status(request: Request):

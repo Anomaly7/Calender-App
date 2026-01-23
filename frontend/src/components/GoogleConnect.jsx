@@ -1,7 +1,8 @@
 export default function GoogleConnect() {
 
   function connectGoogle() {
-    window.location.href = "http://localhost:8000/auth/login";
+    window.location.href = "https://calender-app-mm4q.onrender.com/auth/login";
+
   }
 
   return (

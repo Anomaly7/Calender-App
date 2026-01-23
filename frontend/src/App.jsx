@@ -39,7 +39,7 @@ export default function App() {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
 
-    fetch(`http://localhost:8000/auth/me?user=${userId}`)
+    fetch(`https://calender-app-mm4q.onrender.com/auth/me?user=${userId}`)
       .then(res => res.json())
       .then(data => setEmail(data.email));
   }, []);
@@ -78,7 +78,7 @@ export default function App() {
   function logout() {
     const userId = localStorage.getItem("userId");
 
-    fetch(`http://localhost:8000/auth/logout?user=${userId}`, {
+    fetch(`https://calender-app-mm4q.onrender.com/auth/logout?user=${userId}`, {
       method: "POST"
     }).then(() => {
       localStorage.clear();
@@ -95,11 +95,12 @@ export default function App() {
     const userId = localStorage.getItem("userId");
 
     fetch(
-      `http://localhost:8000/groups/join?group_id=${groupId}&user_id=${userId}`,
+      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${groupId}&user_id=${userId}`,
       { method: "POST" }
     );
 
-    const link = `http://localhost:5173?group=${groupId}`;
+
+    const link = `https://YOUR-VERCEL-APP.vercel.app?group=${groupId}`;
 
     navigator.clipboard.writeText(link)
       .then(() => {
