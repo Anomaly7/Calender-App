@@ -1,4 +1,4 @@
-# Calendar Availability App
+# TimeTier - Calendar Availability App 
 
 **Live Demo:**  
 👉 https://calender-app-one-xi.vercel.app
@@ -53,7 +53,7 @@ Users can connect their Google Calendar, add manual busy times, and instantly se
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend
 - React (Vite)
@@ -71,4 +71,4 @@ Users can connect their Google Calendar, add manual busy times, and instantly se
 ## Author
 
 **Samuel Esebor**  
-Full-stack developer focused on building practical, real-world applications.
+UBC Computer Engineering student, Full-stack developer with ML and microelectronics background. Checkout my linkedin at linkedin.com/in/samuel-esebor
