@@ -24,8 +24,12 @@ export default function AvailabilityForm({
     setError("");
 
     try {
+      const userId = localStorage.getItem("userId");
+      const groupId = localStorage.getItem("groupId");
+
       const res = await fetch(
-        "http://localhost:8000/availability/merge?min_minutes=30&day_start=08:00&day_end=22:00&days=1",
+        `http://localhost:8000/availability/merge?user_id=${userId}&group=${groupId}&min_minutes=30&day_start=08:00&day_end=22:00&days=1`,
+
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

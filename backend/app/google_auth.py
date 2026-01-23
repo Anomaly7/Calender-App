@@ -7,6 +7,8 @@ from googleapiclient.discovery import build
 from starlette.responses import RedirectResponse
 from app.availability import parse_event, find_free_time
 from datetime import datetime, timedelta
+from app.db import cursor, conn
+
 
 router = APIRouter()
 
@@ -51,6 +53,20 @@ def callback(request: Request):
     now = datetime.utcnow().isoformat() + "Z"
     end = (datetime.utcnow() + timedelta(days=1)).isoformat() + "Z"
 
+    # Use calendar account email as user identity
+    calendar = build("calendar", "v3", credentials=credentials)
+
+    calendar_info = calendar.calendarList().get(calendarId="primary").execute()
+    email = calendar_info["id"]   # usually the email
+    user_id = email               # simple + stable
+
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO users (id, email) VALUES (?, ?)",
+        (user_id, email)
+    )
+    conn.commit()
+
     events_result = service.events().list(
         calendarId="primary",
         timeMin=now,
@@ -68,9 +84,21 @@ def callback(request: Request):
     busy = [parse_event(e) for e in events]
 
     # Store Google Calendar busy times for later merging
-    request.app.state.google_busy = busy
+    cursor.execute(
+        "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
+        (user_id,)
+    )
 
-    return RedirectResponse("http://localhost:5173")
+    for start, end in busy:
+        cursor.execute(
+            "INSERT INTO busy_times (user_id, start, end, source) VALUES (?, ?, ?, ?)",
+            (user_id, start.isoformat(), end.isoformat(), "google")
+        )
+
+    conn.commit()
+
+
+    return RedirectResponse(f"http://localhost:5173?user={user_id}")
 
 @router.get("/auth/status")
 def google_status(request: Request):
@@ -83,3 +111,35 @@ def disconnect_google(request: Request):
     if hasattr(request.app.state, "google_busy"):
         del request.app.state.google_busy
     return {"disconnected": True}
+
+@router.get("/auth/me")
+def me(request: Request):
+    from app.db import cursor
+
+    user_id = request.query_params.get("user")
+    if not user_id:
+        return {"email": None}
+
+    cursor.execute(
+        "SELECT email FROM users WHERE id = ?",
+        (user_id,)
+    )
+
+    row = cursor.fetchone()
+    return {"email": row[0] if row else None}
+
+@router.post("/auth/logout")
+def logout(request: Request):
+    from app.db import cursor, conn
+
+    user_id = request.query_params.get("user")
+    if not user_id:
+        return {"logged_out": True}
+
+    cursor.execute(
+        "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
+        (user_id,)
+    )
+    conn.commit()
+
+    return {"logged_out": True}
