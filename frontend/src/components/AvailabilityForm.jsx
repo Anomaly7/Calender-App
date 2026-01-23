@@ -28,14 +28,14 @@ export default function AvailabilityForm({
       const groupId = localStorage.getItem("groupId");
 
       const res = await fetch(
-        `http://localhost:8000/availability/merge?user_id=${userId}&group=${groupId}&min_minutes=30&day_start=08:00&day_end=22:00&days=1`,
-
+        `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}&group=${groupId}&min_minutes=30&day_start=08:00&day_end=22:00&days=1`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify([manualBusy]),
         }
       );
+
 
       if (!res.ok) {
         throw new Error("Failed to fetch availability");
