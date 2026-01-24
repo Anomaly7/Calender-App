@@ -2,7 +2,7 @@
 
 **Live Demo:**  
 👉 https://calender-app-one-xi.vercel.app
-
+Google connection wont work for unauthorized email accounts (message me for access)
 ---
 
 ## Overview
@@ -71,4 +71,4 @@ Users can connect their Google Calendar, add manual busy times, and instantly se
 ## Author
 
 **Samuel Esebor**  
-UBC Computer Engineering student, Full-stack developer with ML and microelectronics background. Checkout my linkedin at linkedin.com/in/samuel-esebor
+UBC Computer Engineering student, Full-stack developer with ML and microelectronics background. Checkout my linkedin at linkedin.com/in/samuel-esebor.com
