@@ -1,4 +1,13 @@
 import { useState } from "react";
+import TimeWheelPicker from "./TimeWheelPicker";
+
+function todayLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function formatLocal(datetimeLocalValue) {
   // datetime-local values have no timezone - they're the browser's own
@@ -20,17 +29,20 @@ export default function AvailabilityForm({
   setManualBusy,
   onSubmit
 }) {
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [startDate, setStartDate] = useState(todayLocal());
+  const [startTime, setStartTime] = useState("09:00");
+  const [endDate, setEndDate] = useState(todayLocal());
+  const [endTime, setEndTime] = useState("10:00");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   function addBusy() {
-    if (!start || !end) return;
+    if (!startDate || !endDate) return;
 
-    setManualBusy([...manualBusy, { start, end }]);
-    setStart("");
-    setEnd("");
+    setManualBusy([
+      ...manualBusy,
+      { start: `${startDate}T${startTime}`, end: `${endDate}T${endTime}` }
+    ]);
   }
 
   function removeBusy(index) {
@@ -58,17 +70,23 @@ export default function AvailabilityForm({
       </div>
 
       <div className="datetime-row">
-        <input
-          type="datetime-local"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-        />
+        <div className="datetime-group">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <TimeWheelPicker value={startTime} onChange={setStartTime} />
+        </div>
         <span className="arrow">→</span>
-        <input
-          type="datetime-local"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-        />
+        <div className="datetime-group">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          <TimeWheelPicker value={endTime} onChange={setEndTime} />
+        </div>
       </div>
 
       <div className="form-actions">

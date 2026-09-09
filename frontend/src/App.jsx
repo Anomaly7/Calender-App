@@ -4,6 +4,7 @@ import "./App.css";
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
 import Results from "./components/Results";
+import DayTimeline from "./components/DayTimeline";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -186,6 +187,17 @@ export default function App() {
   }
 
 
+  const currentUserId = localStorage.getItem("userId");
+  const busyTimesWithTz = busyTimes.map((b) => {
+    const isMine = b.owner === currentUserId;
+    return {
+      ...b,
+      isMine,
+      displayTz: isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles")
+    };
+  });
+  const freeTimesWithTz = freeTimes.map((f) => ({ ...f, displayTz: MY_TIMEZONE }));
+
   return (
     <div className="app">
       <header className="app-header">
@@ -224,30 +236,27 @@ export default function App() {
           <h2>Busy Times</h2>
         </div>
 
-        {busyTimes.length === 0 ? (
+        {busyTimesWithTz.length === 0 ? (
           <p className="empty-state">No busy times found for today.</p>
         ) : (
           <ul className="busy-list">
-            {busyTimes.map((b, i) => {
-              const isMine = b.owner === localStorage.getItem("userId");
-              const displayTz = isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles");
-
-              return (
-                <li className="busy-item" key={i}>
-                  <span>
-                    {formatDateTime(b.start, displayTz)} → {formatDateTime(b.end, displayTz)}
-                  </span>
-                  <span className="label">
-                    {b.label}{!isMine && ` · ${displayTz}`}
-                  </span>
-                </li>
-              );
-            })}
+            {busyTimesWithTz.map((b, i) => (
+              <li className="busy-item" key={i}>
+                <span>
+                  {formatDateTime(b.start, b.displayTz)} → {formatDateTime(b.end, b.displayTz)}
+                </span>
+                <span className="label">
+                  {b.label}{!b.isMine && ` · ${b.displayTz}`}
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </div>
 
       <Results slots={freeTimes} timezone={MY_TIMEZONE} />
+
+      <DayTimeline busyTimes={busyTimesWithTz} freeTimes={freeTimesWithTz} timezone={MY_TIMEZONE} />
     </div>
   );
 }
