@@ -5,8 +5,8 @@ from fastapi import APIRouter, Request
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from starlette.responses import RedirectResponse
-from app.availability import parse_event, find_free_time
-from datetime import datetime, timedelta
+from app.availability import parse_event, find_free_time, PST
+from datetime import datetime, time
 from app.db import conn
 
 
@@ -55,8 +55,9 @@ def callback(request: Request):
 
     service = build("calendar", "v3", credentials=credentials)
 
-    now = datetime.utcnow().isoformat() + "Z"
-    end = (datetime.utcnow() + timedelta(days=14)).isoformat() + "Z"
+    today = datetime.now(PST).date()
+    now = datetime.combine(today, time.min, tzinfo=PST).isoformat()
+    end = datetime.combine(today, time.max, tzinfo=PST).isoformat()
 
     # Use calendar account email as user identity
     calendar = build("calendar", "v3", credentials=credentials)
