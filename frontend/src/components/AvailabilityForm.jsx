@@ -1,5 +1,20 @@
 import { useState } from "react";
 
+function formatLocal(datetimeLocalValue) {
+  // datetime-local values have no timezone - they're the browser's own
+  // local time, so parsing/formatting them needs no zone conversion.
+  const d = new Date(datetimeLocalValue);
+  if (isNaN(d)) return datetimeLocalValue;
+
+  return d.toLocaleString(undefined, {
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+}
+
 export default function AvailabilityForm({
   manualBusy,
   setManualBusy,
@@ -18,6 +33,10 @@ export default function AvailabilityForm({
     setEnd("");
   }
 
+  function removeBusy(index) {
+    setManualBusy(manualBusy.filter((_, i) => i !== index));
+  }
+
   async function submit() {
     setLoading(true);
     setError("");
@@ -33,37 +52,53 @@ export default function AvailabilityForm({
   }
 
   return (
-    <div>
-      <h3>Manual Busy Times</h3>
+    <div className="card">
+      <div className="card-title">
+        <h2>Manual Busy Times</h2>
+      </div>
 
-      <input
-        type="datetime-local"
-        value={start}
-        onChange={(e) => setStart(e.target.value)}
-      />
+      <div className="datetime-row">
+        <input
+          type="datetime-local"
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+        />
+        <span className="arrow">→</span>
+        <input
+          type="datetime-local"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+        />
+      </div>
 
-      <input
-        type="datetime-local"
-        value={end}
-        onChange={(e) => setEnd(e.target.value)}
-      />
+      <div className="form-actions">
+        <button className="btn-ghost" onClick={addBusy}>Add Busy Slot</button>
+        <button className="btn btn-primary" onClick={submit} disabled={loading}>
+          {loading && <span className="spinner" />}
+          {loading ? "Finding..." : "Find Free Time"}
+        </button>
+      </div>
 
-      <br /><br />
+      {error && <p className="error-text">{error}</p>}
 
-      <button onClick={addBusy}>Add Busy Slot</button>
-      <button onClick={submit} disabled={loading}>
-        Find Free Time
-      </button>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      <ul>
-        {manualBusy.map((b, i) => (
-          <li key={i}>
-            {b.start} → {b.end}
-          </li>
-        ))}
-      </ul>
+      {manualBusy.length === 0 ? (
+        <p className="empty-state">No manual busy times added yet.</p>
+      ) : (
+        <ul className="chip-list">
+          {manualBusy.map((b, i) => (
+            <li className="chip" key={i}>
+              <span>{formatLocal(b.start)} → {formatLocal(b.end)}</span>
+              <button
+                className="chip-remove"
+                onClick={() => removeBusy(i)}
+                aria-label="Remove this busy slot"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

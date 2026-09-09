@@ -7,6 +7,17 @@ import Results from "./components/Results";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+function formatDateTime(iso, timeZone) {
+  return new Date(iso).toLocaleString(undefined, {
+    timeZone,
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+}
+
 export default function App() {
   // 🔹 MANUAL BUSY SLOTS (input form)
   const [manualBusy, setManualBusy] = useState(() => {
@@ -176,8 +187,20 @@ export default function App() {
 
 
   return (
-    <div>
-      <GoogleConnect />
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <span className="brand-mark">🗓️</span>
+          <h1>Lookout</h1>
+        </div>
+        {email && (
+          <div className="user-chip">
+            Signed in as <strong>{email}</strong>
+          </div>
+        )}
+      </header>
+
+      <GoogleConnect connected={!!email} />
 
       <AvailabilityForm
         manualBusy={manualBusy}
@@ -185,39 +208,44 @@ export default function App() {
         onSubmit={fetchAvailability}
       />
 
-      <button onClick={clearAll} style={{ marginBottom: "20px" }}>
-        Clear Schedule
-      </button>
-      <button onClick={logout}>
-        Logout / Disconnect Google
-      </button>
-      <button onClick={createGroupLink}>
-        Create Group Link
-      </button>
-      {email && <p>Logged in as: <strong>{email}</strong></p>}
-      <p style={{ color: "#666", fontSize: "0.9em" }}>
-        Your times are shown in your current timezone:{" "}
-        <strong>{MY_TIMEZONE}</strong>. Other group members' times are shown
-        in the timezone they were originally entered in.
+      <div className="toolbar">
+        <button className="btn-ghost" onClick={clearAll}>Clear Schedule</button>
+        <button className="btn-ghost" onClick={logout}>Logout / Disconnect Google</button>
+        <button className="btn btn-primary" onClick={createGroupLink}>Create Group Link</button>
+      </div>
+
+      <p className="tz-note">
+        🌐 Your times: <strong>{MY_TIMEZONE}</strong> · Other group members'
+        times are shown in the zone they were originally entered in
       </p>
-      <h3>Busy Times</h3>
 
-      <ul>
-        {busyTimes.map((b, i) => {
-          const isMine = b.owner === localStorage.getItem("userId");
-          const displayTz = isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles");
+      <div className="card">
+        <div className="card-title">
+          <h2>Busy Times</h2>
+        </div>
 
-          return (
-            <li key={i}>
-              {new Date(b.start).toLocaleString(undefined, { timeZone: displayTz })} →{" "}
-              {new Date(b.end).toLocaleString(undefined, { timeZone: displayTz })} {b.label}
-              {!isMine && (
-                <span style={{ color: "#666" }}> ({displayTz})</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+        {busyTimes.length === 0 ? (
+          <p className="empty-state">No busy times found for today.</p>
+        ) : (
+          <ul className="busy-list">
+            {busyTimes.map((b, i) => {
+              const isMine = b.owner === localStorage.getItem("userId");
+              const displayTz = isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles");
+
+              return (
+                <li className="busy-item" key={i}>
+                  <span>
+                    {formatDateTime(b.start, displayTz)} → {formatDateTime(b.end, displayTz)}
+                  </span>
+                  <span className="label">
+                    {b.label}{!isMine && ` · ${displayTz}`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <Results slots={freeTimes} timezone={MY_TIMEZONE} />
     </div>
