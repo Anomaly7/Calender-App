@@ -108,10 +108,13 @@ export default function App() {
     const groupId = localStorage.getItem("groupId");
     const groupParam = groupId ? `&group=${groupId}` : "";
 
-    // Always fetch a full week so switching between the Day and Week tabs
-    // is instant and doesn't need a fresh request.
+    // Always fetch the whole current week (Sunday through Saturday) so
+    // switching between the Day and Week tabs is instant and doesn't need
+    // a fresh request - JS getDay() is already 0=Sunday.
+    const startOffset = -new Date().getDay();
+
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -8,6 +8,7 @@
   --accent: #5b5ff0;
   --accent-hover: #4a4dd6;
   --accent-soft: #eeeeff;
+  --accent-translucent: rgba(91, 95, 240, 0.16);
   --danger: #e5484d;
   --danger-soft: #fdeceb;
   --success: #1a9b6a;
@@ -51,6 +52,7 @@
     --accent: #8285ff;
     --accent-hover: #9b9dff;
     --accent-soft: #2a2b52;
+    --accent-translucent: rgba(130, 133, 255, 0.22);
     --danger: #ff6b6f;
     --danger-soft: #3a2226;
     --success: #3ecf8e;

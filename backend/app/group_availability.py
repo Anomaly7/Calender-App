@@ -16,7 +16,8 @@ def merge_users_availability(
     day_start: str = Query("08:00"),
     day_end: str = Query("22:00"),
     timezone: str = Query(None),
-    days: int = Query(1)
+    days: int = Query(1),
+    start_offset: int = Query(0)
     ):
 
     # The viewer's own current timezone - "today", business hours, and
@@ -82,7 +83,8 @@ def merge_users_availability(
 
     # ---- Gather busy times for this user + any group members, all from the DB ----
     today = datetime.now(viewer_tz).date()
-    date_range = {today + timedelta(days=i) for i in range(days)}
+    range_start = today + timedelta(days=start_offset)
+    date_range = {range_start + timedelta(days=i) for i in range(days)}
     member_ids = [user_id]
     seen_member_keys = {user_id.strip().lower()}
 
