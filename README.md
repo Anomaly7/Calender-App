@@ -1,4 +1,4 @@
-# TimeTier - Calendar Availability App 
+# TimeFrame - Calendar Availability App 
 
 **Live Demo:**  
 👉 https://calender-app-one-xi.vercel.app
