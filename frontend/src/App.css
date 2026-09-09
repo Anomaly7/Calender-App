@@ -352,27 +352,38 @@
 
 .timeline-hour-label {
   position: absolute;
-  transform: translateY(-50%);
+  transform: translateY(-100%);
+  padding-bottom: 3px;
+  padding-right: 0.5rem;
+  width: 100%;
+  text-align: right;
   font-size: 0.72rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-.calendar-days {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.calendar-day-col {
+.calendar-main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
+.calendar-headers-row {
+  display: flex;
+}
+
+.calendar-grid-frame {
+  display: flex;
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+
 .calendar-day-header {
+  flex: 1;
+  min-width: 0;
   height: 2.2rem;
   display: flex;
   flex-direction: column;
@@ -410,10 +421,13 @@
 .timeline-track {
   position: relative;
   flex: 1;
-  border: 1px solid var(--grid-line);
-  border-radius: var(--radius-sm);
+  min-width: 0;
+  border-right: 1px solid var(--grid-line);
   background: var(--surface);
   overflow: hidden;
+}
+.timeline-track:last-child {
+  border-right: none;
 }
 
 .timeline-gridline {
@@ -427,6 +441,29 @@
   position: absolute;
   border-radius: 4px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  padding: 2px 5px;
+  overflow: hidden;
+}
+
+.block-content {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.block-time {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-sub {
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .timeline-block.busy {
