@@ -234,6 +234,7 @@ export default function App() {
         busyTimes={busyTimes}
         freeTimes={freeTimes}
         timezone={MY_TIMEZONE}
+        currentUserId={localStorage.getItem("userId")}
       />
     </div>
   );
