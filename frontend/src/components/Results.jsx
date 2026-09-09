@@ -1,4 +1,4 @@
-export default function Results({ slots }) {
+export default function Results({ slots, timezone }) {
   if (!slots.length) return null;
 
   return (
@@ -8,8 +8,8 @@ export default function Results({ slots }) {
       <ul>
         {slots.map((slot, i) => (
           <li key={i}>
-            {new Date(slot.start).toLocaleTimeString()} –{" "}
-            {new Date(slot.end).toLocaleTimeString()}
+            {new Date(slot.start).toLocaleTimeString(undefined, { timeZone: timezone })} –{" "}
+            {new Date(slot.end).toLocaleTimeString(undefined, { timeZone: timezone })}
             {" "}({formatDuration(slot.duration_minutes)})
           </li>
         ))}
