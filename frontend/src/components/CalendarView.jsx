@@ -254,15 +254,25 @@ export default function CalendarView({
                           left: `calc(${(b.lane / b.laneCount) * 100}% + 2px)`,
                           width: `calc(${100 / b.laneCount}% - 4px)`
                         }}
-                        title={`Busy ${b.label || ""}${owner ? ` · ${owner}` : ""}`}
+                        title={`${b.title || b.label || "Busy"}${owner ? ` · ${owner}` : ""}`}
                       >
                         <div className="block-content">
-                          <span className="block-time">
-                            {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
-                          </span>
-                          <span className="block-sub">
-                            {owner ? owner : b.label}
-                          </span>
+                          {b.title ? (
+                            <>
+                              <span className="block-time">{b.title}</span>
+                              <span className="block-sub">
+                                {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
+                              </span>
+                              {owner && <span className="block-sub">{owner}</span>}
+                            </>
+                          ) : (
+                            <>
+                              <span className="block-time">
+                                {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
+                              </span>
+                              <span className="block-sub">{owner || b.label}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     );

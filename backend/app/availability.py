@@ -14,6 +14,9 @@ def parse_event(event):
     # on the page instead of only in server logs.
     raw_timezone = start.get("timeZone")
 
+    # Untitled events have no "summary" field at all.
+    title = event.get("summary") or ""
+
     if "dateTime" in start:
         start_dt = datetime.fromisoformat(start["dateTime"]).astimezone(PST)
         end_dt = datetime.fromisoformat(end["dateTime"]).astimezone(PST)
@@ -22,7 +25,7 @@ def parse_event(event):
         start_dt = datetime.fromisoformat(start["date"]).replace(tzinfo=PST)
         end_dt = datetime.fromisoformat(end["date"]).replace(tzinfo=PST)
 
-    return start_dt, end_dt, raw_timezone
+    return start_dt, end_dt, raw_timezone, title
 
 
 def merge_intervals(intervals):

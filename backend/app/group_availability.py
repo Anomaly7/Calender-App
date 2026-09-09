@@ -44,8 +44,10 @@ def merge_users_availability(
 
             if isinstance(block, dict):
                 start, end = block["start"], block["end"]
+                title = block.get("title") or ""
             else:
                 start, end = block
+                title = ""
 
             start_dt = datetime.fromisoformat(start) if isinstance(start, str) else start
             end_dt = datetime.fromisoformat(end) if isinstance(end, str) else end
@@ -62,7 +64,7 @@ def merge_users_availability(
             else:
                 end_dt = end_dt.astimezone(viewer_tz)
 
-            manual_blocks.append((start_dt, end_dt))
+            manual_blocks.append((start_dt, end_dt, title))
 
     # Persist them so other group members can see this user's busy times too -
     # previously manual entries only ever lived in this one response. Record
@@ -73,10 +75,10 @@ def merge_users_availability(
         (user_id,)
     )
 
-    for start_dt, end_dt in manual_blocks:
+    for start_dt, end_dt, title in manual_blocks:
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone) VALUES (?, ?, ?, ?, ?)",
-            (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual", str(viewer_tz))
+            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual", str(viewer_tz), title)
         )
 
     conn.commit()
@@ -106,11 +108,11 @@ def merge_users_availability(
 
     for uid in member_ids:
         rows = conn.execute(
-            "SELECT start, end, source, raw_timezone FROM busy_times WHERE user_id = ?",
+            "SELECT start, end, source, raw_timezone, title FROM busy_times WHERE user_id = ?",
             (uid,)
         ).fetchall()
 
-        for start, end, source, raw_timezone in rows:
+        for start, end, source, raw_timezone, title in rows:
             start_dt = datetime.fromisoformat(start).astimezone(viewer_tz)
             end_dt = datetime.fromisoformat(end).astimezone(viewer_tz)
 
@@ -134,6 +136,7 @@ def merge_users_availability(
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
                 "label": "(imported)" if source == "google" else "(manual)",
+                "title": title or None,
                 "owner": uid,
                 "source_timezone": raw_timezone
             })
