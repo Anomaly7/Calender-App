@@ -1,6 +1,6 @@
 from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Body, Query, Request
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from app.availability import merge_intervals, find_free_time, score_slot
 from app.db import conn
 
@@ -14,8 +14,7 @@ def merge_users_availability(
     users_busy: list = Body(...),
     min_minutes: int = Query(30),
     day_start: str = Query("08:00"),
-    day_end: str = Query("22:00"),
-    days: int = Query(1)
+    day_end: str = Query("22:00")
     ):
 
     PST = ZoneInfo("America/Los_Angeles")
@@ -53,7 +52,7 @@ def merge_users_availability(
 
     all_busy = []
     busy_output = []
-
+    today = datetime.now(PST).date()
 
     group_id = request.query_params.get("group")
 
@@ -106,6 +105,11 @@ def merge_users_availability(
             if end_dt.tzinfo is None:
                 end_dt = end_dt.replace(tzinfo=PST)
 
+            # Only consider busy time that falls on today (PST) - matches
+            # what find_free_time computes free time for by default.
+            if start_dt.astimezone(PST).date() != today:
+                continue
+
             all_busy.append((start_dt, end_dt))
 
             label = "(imported)" if (start_dt, end_dt) in google_busy else "(manual)"
@@ -119,29 +123,25 @@ def merge_users_availability(
     # ---- Merge busy intervals ----
     merged_busy = merge_intervals(all_busy)
 
-    # ---- Compute free time ----
+    # ---- Compute free time (today only) ----
     results = []
-    today = datetime.now(PST).date()
 
-    for i in range(days):
-        target_date = today + timedelta(days=i)
+    free_slots = find_free_time(
+        merged_busy,
+        target_date=today,
+        day_start=day_start_time,
+        day_end=day_end_time,
+        min_minutes=min_minutes
+    )
 
-        free_slots = find_free_time(
-            merged_busy,
-            target_date=target_date,
-            day_start=day_start_time,
-            day_end=day_end_time,
-            min_minutes=min_minutes
-        )
-
-        for start, end in free_slots:
-            results.append({
-                "date": target_date.isoformat(),
-                "start": start.isoformat(),
-                "end": end.isoformat(),
-                "duration_minutes": int((end - start).total_seconds() / 60),
-                "score": score_slot(start, end)
-            })
+    for start, end in free_slots:
+        results.append({
+            "date": today.isoformat(),
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "duration_minutes": int((end - start).total_seconds() / 60),
+            "score": score_slot(start, end)
+        })
 
     results.sort(key=lambda x: x["score"], reverse=True)
 
