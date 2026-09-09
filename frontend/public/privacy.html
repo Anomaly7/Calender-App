@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Lookout</title>
+<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --border: #e2e4ee;
+    --text: #1b1d29;
+    --text-muted: #676b83;
+    --accent: #5b5ff0;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151f;
+      --surface: #1c1e2b;
+      --border: #2e3145;
+      --text: #edeef7;
+      --text-muted: #9698b3;
+      --accent: #8285ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+  a { color: var(--accent); }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  .updated { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem;
+  }
+  ul { padding-left: 1.25rem; }
+  li { margin-bottom: 0.4rem; }
+  code {
+    background: var(--border);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Privacy Policy — Lookout</h1>
+  <p class="updated">Last updated: September 9, 2026</p>
+
+  <div class="card">
+    <p>
+      Lookout ("the app") helps you and your group find shared free time by
+      combining your Google Calendar availability with times you enter
+      manually. This page explains what data the app accesses, what it
+      stores, and how it's used.
+    </p>
+
+    <h2>What we access from Google Calendar</h2>
+    <p>
+      When you connect Google Calendar, Lookout requests read-only access
+      (<code>calendar.readonly</code>) to your primary calendar. We only
+      read:
+    </p>
+    <ul>
+      <li>The start and end time of each event</li>
+      <li>The timezone the event was created in</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> read or store event titles, descriptions,
+      locations, attendees, or any other event details — only the time
+      ranges needed to know when you're busy.
+    </p>
+
+    <h2>What we store</h2>
+    <ul>
+      <li>Your Google account email, used as your account identifier</li>
+      <li>Busy time ranges imported from Google Calendar (as described above)</li>
+      <li>Busy time ranges you enter manually through the app</li>
+      <li>Group membership, if you create or join a shared group link</li>
+    </ul>
+    <p>
+      This data is stored on our server for as long as your account is
+      active, or until you disconnect Google Calendar or clear your
+      schedule (see "Your choices" below).
+    </p>
+
+    <h2>Group sharing</h2>
+    <p>
+      If you join or create a group (via a shared invite link), your busy
+      time ranges — both imported and manually entered — become visible to
+      other members of that same group, so the app can compute a time
+      that works for everyone. Only share a group link with people you're
+      comfortable seeing your availability.
+    </p>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We don't sell your data</li>
+      <li>We don't share your data with third parties for advertising or marketing</li>
+      <li>We don't use your calendar data for anything other than computing free/busy availability within the app</li>
+    </ul>
+
+    <h2>Third-party services we use</h2>
+    <p>These services process data on our behalf to operate the app:</p>
+    <ul>
+      <li><strong>Google</strong> — for sign-in and reading calendar availability</li>
+      <li><strong>Render</strong> — hosts our backend server and database</li>
+      <li><strong>Vercel</strong> — hosts the app's web page</li>
+    </ul>
+
+    <h2>Browser storage</h2>
+    <p>
+      The app uses your browser's local storage to remember your session
+      (like your account id and a cached copy of your schedule) so the
+      page works smoothly between visits. This stays on your device and
+      isn't shared with us beyond what's already sent to our server to
+      compute your schedule.
+    </p>
+
+    <h2>Your choices</h2>
+    <ul>
+      <li>Click "Logout / Disconnect Google" in the app to remove your imported Google Calendar data from our server</li>
+      <li>Click "Clear Schedule" to remove locally cached data from your browser</li>
+      <li>Email us (below) to request complete deletion of your account data from our server</li>
+    </ul>
+
+    <h2>Children's privacy</h2>
+    <p>Lookout is not directed at children under 13, and we don't knowingly collect data from them.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>
+      We may update this policy as the app changes. Continued use of
+      Lookout after an update means you accept the revised policy.
+    </p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy or your data? Email <a href="mailto:sam.esebor@gmail.com">sam.esebor@gmail.com</a>.</p>
+  </div>
+</div>
+</body>
+</html>
