@@ -58,7 +58,18 @@ export default function App() {
       .then(res => res.json())
       .then(data => setEmail(data.email));
   }, []);
-  
+
+  // Busy/free times are scoped to "today" server-side, so cached results
+  // from a previous visit (or an earlier day) are stale as soon as the
+  // page loads. Re-fetch automatically instead of waiting for the user to
+  // click "Find Free Time" again.
+  useEffect(() => {
+    if (localStorage.getItem("userId")) {
+      fetchAvailability(manualBusy).catch(err => console.error(err));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 🔁 Persist everything
   useEffect(() => {
     localStorage.setItem("manualBusy", JSON.stringify(manualBusy));
@@ -78,6 +89,31 @@ export default function App() {
       console.log("Loaded saved busy slots:", manualBusy);
     }
   }, []);
+
+  async function fetchAvailability(extraBusy = []) {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    const groupId = localStorage.getItem("groupId");
+    const groupParam = groupId ? `&group=${groupId}` : "";
+
+    const res = await fetch(
+      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(extraBusy.length ? [extraBusy] : []),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch availability");
+    }
+
+    const data = await res.json();
+    setBusyTimes(data.busy_times);
+    setFreeTimes(data.ranked_free_time);
+  }
 
   // 🧼 CLEAR EVERYTHING
   function clearAll() {
@@ -136,8 +172,7 @@ export default function App() {
       <AvailabilityForm
         manualBusy={manualBusy}
         setManualBusy={setManualBusy}
-        onResults={setFreeTimes}
-        onBusyUpdate={setBusyTimes}
+        onSubmit={fetchAvailability}
       />
 
       <button onClick={clearAll} style={{ marginBottom: "20px" }}>
