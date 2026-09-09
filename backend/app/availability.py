@@ -43,29 +43,25 @@ def merge_intervals(intervals):
     return merged
 
 
-
-from zoneinfo import ZoneInfo
-
-PST = ZoneInfo("America/Los_Angeles")
-
 def find_free_time(
     busy_intervals,
     target_date,
     day_start,
     day_end,
-    min_minutes=30
+    min_minutes=30,
+    tz=PST
 ):
     free = []
     min_duration = timedelta(minutes=min_minutes)
 
-    now_pst = datetime.now(PST)
+    now_tz = datetime.now(tz)
 
-    start_dt = datetime.combine(target_date, day_start, tzinfo=PST)
-    end_dt = datetime.combine(target_date, day_end, tzinfo=PST)
+    start_dt = datetime.combine(target_date, day_start, tzinfo=tz)
+    end_dt = datetime.combine(target_date, day_end, tzinfo=tz)
 
     # If today, don’t look at past time
-    if target_date == now_pst.date():
-        start_dt = max(start_dt, now_pst)
+    if target_date == now_tz.date():
+        start_dt = max(start_dt, now_tz)
 
     # Busy blocks only for this date
     day_busy = [

@@ -14,10 +14,17 @@ def merge_users_availability(
     users_busy: list = Body(...),
     min_minutes: int = Query(30),
     day_start: str = Query("08:00"),
-    day_end: str = Query("22:00")
+    day_end: str = Query("22:00"),
+    timezone: str = Query(None)
     ):
 
-    PST = ZoneInfo("America/Los_Angeles")
+    # The viewer's own current timezone - "today", business hours, and
+    # anything they enter manually are all relative to where THEY are right
+    # now. Falls back to Pacific if the client doesn't send one.
+    try:
+        viewer_tz = ZoneInfo(timezone) if timezone else PST
+    except Exception:
+        viewer_tz = PST
 
     # ---- Parse day bounds ----
     day_start_time = time.fromisoformat(day_start)
@@ -41,20 +48,24 @@ def merge_users_availability(
             start_dt = datetime.fromisoformat(start) if isinstance(start, str) else start
             end_dt = datetime.fromisoformat(end) if isinstance(end, str) else end
 
+            # A naive value (e.g. from the manual-entry form) means "in the
+            # viewer's own current timezone" - not a fixed Pacific default.
             if start_dt.tzinfo is None:
-                start_dt = start_dt.replace(tzinfo=PST)
+                start_dt = start_dt.replace(tzinfo=viewer_tz)
             else:
-                start_dt = start_dt.astimezone(PST)
+                start_dt = start_dt.astimezone(viewer_tz)
 
             if end_dt.tzinfo is None:
-                end_dt = end_dt.replace(tzinfo=PST)
+                end_dt = end_dt.replace(tzinfo=viewer_tz)
             else:
-                end_dt = end_dt.astimezone(PST)
+                end_dt = end_dt.astimezone(viewer_tz)
 
             manual_blocks.append((start_dt, end_dt))
 
     # Persist them so other group members can see this user's busy times too -
-    # previously manual entries only ever lived in this one response.
+    # previously manual entries only ever lived in this one response. Record
+    # the zone they were entered in so viewers can later see them in their
+    # original timezone rather than one silently converted.
     conn.execute(
         "DELETE FROM busy_times WHERE user_id = ? AND source = 'manual'",
         (user_id,)
@@ -62,14 +73,14 @@ def merge_users_availability(
 
     for start_dt, end_dt in manual_blocks:
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source) VALUES (?, ?, ?, ?)",
-            (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual")
+            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone) VALUES (?, ?, ?, ?, ?)",
+            (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual", str(viewer_tz))
         )
 
     conn.commit()
 
     # ---- Gather busy times for this user + any group members, all from the DB ----
-    today = datetime.now(PST).date()
+    today = datetime.now(viewer_tz).date()
     member_ids = [user_id]
     seen_member_keys = {user_id.strip().lower()}
 
@@ -96,11 +107,11 @@ def merge_users_availability(
         ).fetchall()
 
         for start, end, source, raw_timezone in rows:
-            start_dt = datetime.fromisoformat(start).astimezone(PST)
-            end_dt = datetime.fromisoformat(end).astimezone(PST)
+            start_dt = datetime.fromisoformat(start).astimezone(viewer_tz)
+            end_dt = datetime.fromisoformat(end).astimezone(viewer_tz)
 
-            # Only consider busy time that falls on today (PST) - matches
-            # what find_free_time computes free time for by default.
+            # Only consider busy time that falls on the viewer's today -
+            # matches what find_free_time computes free time for.
             if start_dt.date() != today:
                 continue
 
@@ -118,6 +129,7 @@ def merge_users_availability(
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
                 "label": "(imported)" if source == "google" else "(manual)",
+                "owner": uid,
                 "source_timezone": raw_timezone
             })
 
@@ -132,7 +144,8 @@ def merge_users_availability(
         target_date=today,
         day_start=day_start_time,
         day_end=day_end_time,
-        min_minutes=min_minutes
+        min_minutes=min_minutes,
+        tz=viewer_tz
     )
 
     for start, end in free_slots:

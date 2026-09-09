@@ -5,6 +5,8 @@ import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
 import Results from "./components/Results";
 
+const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export default function App() {
   // 🔹 MANUAL BUSY SLOTS (input form)
   const [manualBusy, setManualBusy] = useState(() => {
@@ -106,7 +108,7 @@ export default function App() {
     const groupParam = groupId ? `&group=${groupId}` : "";
 
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -194,27 +196,30 @@ export default function App() {
       </button>
       {email && <p>Logged in as: <strong>{email}</strong></p>}
       <p style={{ color: "#666", fontSize: "0.9em" }}>
-        Times shown in: <strong>America/Los_Angeles (Pacific)</strong>
-        {" "}| Your browser's timezone:{" "}
-        <strong>{Intl.DateTimeFormat().resolvedOptions().timeZone}</strong>
+        Your times are shown in your current timezone:{" "}
+        <strong>{MY_TIMEZONE}</strong>. Other group members' times are shown
+        in the timezone they were originally entered in.
       </p>
       <h3>Busy Times</h3>
 
       <ul>
-        {busyTimes.map((b, i) => (
-          <li key={i}>
-            {new Date(b.start).toLocaleString()} →{" "}
-            {new Date(b.end).toLocaleString()} {b.label}
-            {b.source_timezone && b.source_timezone !== "America/Los_Angeles" && (
-              <span style={{ color: "red" }}>
-                {" "}(source event timezone: {b.source_timezone})
-              </span>
-            )}
-          </li>
-        ))}
+        {busyTimes.map((b, i) => {
+          const isMine = b.owner === localStorage.getItem("userId");
+          const displayTz = isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles");
+
+          return (
+            <li key={i}>
+              {new Date(b.start).toLocaleString(undefined, { timeZone: displayTz })} →{" "}
+              {new Date(b.end).toLocaleString(undefined, { timeZone: displayTz })} {b.label}
+              {!isMine && (
+                <span style={{ color: "#666" }}> ({displayTz})</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
-      <Results slots={freeTimes} />
+      <Results slots={freeTimes} timezone={MY_TIMEZONE} />
     </div>
   );
 }
