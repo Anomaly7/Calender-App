@@ -6,7 +6,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from starlette.responses import RedirectResponse
 from app.availability import parse_event, find_free_time, PST
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from app.db import conn
 
 
@@ -55,9 +55,11 @@ def callback(request: Request):
 
     service = build("calendar", "v3", credentials=credentials)
 
+    # Fetch a couple weeks out so the week view has real data beyond today,
+    # not just the current day.
     today = datetime.now(PST).date()
     now = datetime.combine(today, time.min, tzinfo=PST).isoformat()
-    end = datetime.combine(today, time.max, tzinfo=PST).isoformat()
+    end = datetime.combine(today + timedelta(days=13), time.max, tzinfo=PST).isoformat()
 
     # Use calendar account email as user identity
     calendar = build("calendar", "v3", credentials=credentials)
