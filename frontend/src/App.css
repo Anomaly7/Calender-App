@@ -396,6 +396,17 @@
   color: var(--accent);
 }
 
+.today-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--accent-translucent);
+  color: var(--accent);
+}
+
 .timeline-track {
   position: relative;
   flex: 1;

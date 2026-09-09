@@ -19,6 +19,15 @@ function addDays(dateStr, n) {
   return ymd(dt);
 }
 
+function dayOfWeek(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay(); // 0 = Sunday .. 6 = Saturday
+}
+
+function dayNumber(dateStr) {
+  return String(Number(dateStr.split("-")[2]));
+}
+
 function weekdayLabel(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short" });
@@ -51,23 +60,47 @@ function formatHourLabel(hour) {
 }
 
 // Greedy lane assignment so overlapping busy blocks sit side by side
-// instead of stacking on top of each other.
+// instead of stacking on top of each other. Lanes are computed per cluster
+// of mutually-overlapping blocks, not for the whole day at once - a block
+// that doesn't overlap anything should always render full width, even if
+// two other blocks elsewhere that same day happen to overlap each other.
 function assignLanes(blocks) {
   const sorted = [...blocks].sort((a, b) => a.startMin - b.startMin);
-  const laneEnds = [];
+  const placed = [];
 
-  const placed = sorted.map((block) => {
-    let lane = laneEnds.findIndex((end) => end <= block.startMin);
-    if (lane === -1) {
-      lane = laneEnds.length;
-      laneEnds.push(block.endMin);
-    } else {
-      laneEnds[lane] = block.endMin;
+  let cluster = [];
+  let clusterEnd = -Infinity;
+
+  function flushCluster() {
+    if (cluster.length === 0) return;
+
+    const laneEnds = [];
+    const withLane = cluster.map((block) => {
+      let lane = laneEnds.findIndex((end) => end <= block.startMin);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(block.endMin);
+      } else {
+        laneEnds[lane] = block.endMin;
+      }
+      return { ...block, lane };
+    });
+
+    const laneCount = laneEnds.length;
+    withLane.forEach((b) => placed.push({ ...b, laneCount }));
+    cluster = [];
+  }
+
+  for (const block of sorted) {
+    if (cluster.length > 0 && block.startMin >= clusterEnd) {
+      flushCluster();
     }
-    return { ...block, lane };
-  });
+    cluster.push(block);
+    clusterEnd = cluster.length === 1 ? block.endMin : Math.max(clusterEnd, block.endMin);
+  }
+  flushCluster();
 
-  return { placed, laneCount: Math.max(1, laneEnds.length) };
+  return placed;
 }
 
 export default function CalendarView({
@@ -79,7 +112,8 @@ export default function CalendarView({
   dayEndHour = 22
 }) {
   const today = todayLocal();
-  const dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(today, i)) : [today];
+  const weekStart = addDays(today, -dayOfWeek(today));
+  const dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [today];
 
   const totalMinutes = (dayEndHour - dayStartHour) * 60;
   const totalHeight = (dayEndHour - dayStartHour) * PX_PER_HOUR;
@@ -132,7 +166,7 @@ export default function CalendarView({
               .map((b) => ({ ...b, ...toSpan(b.start, b.end) }))
               .filter((b) => b.endMin > 0 && b.startMin < totalMinutes);
 
-            const { placed: busyLaned, laneCount } = assignLanes(dayBusy);
+            const busyLaned = assignLanes(dayBusy);
 
             const dayFree = freeTimes
               .filter((f) => f.date === date)
@@ -144,7 +178,13 @@ export default function CalendarView({
                 {showHeaders && (
                   <div className={`calendar-day-header ${isToday ? "today" : ""}`}>
                     <span className="wd">{weekdayLabel(date)}</span>
-                    <span className="md">{monthDayLabel(date)}</span>
+                    <span className="md">
+                      {isToday ? (
+                        <span className="today-circle">{dayNumber(date)}</span>
+                      ) : (
+                        monthDayLabel(date)
+                      )}
+                    </span>
                   </div>
                 )}
 
@@ -176,8 +216,8 @@ export default function CalendarView({
                       style={{
                         top: `${(b.startMin / totalMinutes) * totalHeight}px`,
                         height: `${Math.max(4, ((b.endMin - b.startMin) / totalMinutes) * totalHeight)}px`,
-                        left: `${(b.lane / laneCount) * 100}%`,
-                        width: `${100 / laneCount}%`
+                        left: `calc(${(b.lane / b.laneCount) * 100}% + 2px)`,
+                        width: `calc(${100 / b.laneCount}% - 4px)`
                       }}
                       title={`Busy ${b.label || ""}`}
                     />
