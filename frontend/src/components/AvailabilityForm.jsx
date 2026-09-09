@@ -26,9 +26,10 @@ export default function AvailabilityForm({
     try {
       const userId = localStorage.getItem("userId");
       const groupId = localStorage.getItem("groupId");
+      const groupParam = groupId ? `&group=${groupId}` : "";
 
       const res = await fetch(
-        `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}&group=${groupId}&min_minutes=30&day_start=08:00&day_end=22:00&days=1`,
+        `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&days=1`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -45,6 +46,7 @@ export default function AvailabilityForm({
       onBusyUpdate(data.busy_times);
       onResults(data.ranked_free_time);
     } catch (err) {
+      console.error(err);
       setError("Something went wrong. Is the backend running?");
     } finally {
       setLoading(false);

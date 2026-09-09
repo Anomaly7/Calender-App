@@ -22,12 +22,27 @@ export default function App() {
 
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("user");
+  const groupIdFromLink = params.get("group");
 
   useEffect(() => {
     if (userId) {
       localStorage.setItem("userId", userId);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!groupIdFromLink) return;
+
+    localStorage.setItem("groupId", groupIdFromLink);
+
+    const joiningUserId = userId || localStorage.getItem("userId");
+    if (!joiningUserId) return;
+
+    fetch(
+      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${groupIdFromLink}&user_id=${joiningUserId}`,
+      { method: "POST" }
+    );
+  }, [groupIdFromLink, userId]);
 
   // 🔹 FREE TIMES
   const [freeTimes, setFreeTimes] = useState(() => {
@@ -70,6 +85,7 @@ export default function App() {
     setBusyTimes([]);
     setFreeTimes([]);
     localStorage.removeItem("userId");
+    localStorage.removeItem("groupId");
     localStorage.removeItem("manualBusy");
     localStorage.removeItem("busyTimes");
     localStorage.removeItem("freeTimes");
@@ -99,8 +115,9 @@ export default function App() {
       { method: "POST" }
     );
 
+    localStorage.setItem("groupId", groupId);
 
-    const link = `https://YOUR-VERCEL-APP.vercel.app?group=${groupId}`;
+    const link = `https://calender-app-one-xi.vercel.app/?group=${groupId}`;
 
     navigator.clipboard.writeText(link)
       .then(() => {
