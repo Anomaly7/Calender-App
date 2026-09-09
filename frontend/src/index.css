@@ -17,16 +17,16 @@
   --radius: 12px;
   --radius-sm: 8px;
 
-  /* Timeline: solid, evenly-weighted colors so busy/free/best all read
-     with the same contrast - deliberately separate from the semantic
-     danger/success/accent tokens used elsewhere in the UI. */
+  /* Timeline: translucent fills with a solid left border and matching
+     text color (Apple Calendar-style) - deliberately separate from the
+     semantic danger/success/accent tokens used elsewhere in the UI. */
   --grid-line: #d5d8e6;
-  --tl-busy: #e5484d;
-  --tl-busy-text: #ffffff;
-  --tl-free: #4285f4;
-  --tl-free-text: #ffffff;
-  --tl-best: #1a9b6a;
-  --tl-best-text: #ffffff;
+  --tl-busy: #d1373d;
+  --tl-busy-bg: rgba(229, 72, 77, 0.14);
+  --tl-free: #2f6fda;
+  --tl-free-bg: rgba(66, 133, 244, 0.13);
+  --tl-best: #158a5c;
+  --tl-best-bg: rgba(26, 155, 106, 0.14);
 
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -60,12 +60,12 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.35);
 
     --grid-line: #3a3d55;
-    --tl-busy: #e5484d;
-    --tl-busy-text: #ffffff;
-    --tl-free: #5c9bff;
-    --tl-free-text: #0b1220;
-    --tl-best: #3ecf8e;
-    --tl-best-text: #0b1220;
+    --tl-busy: #ff8a8d;
+    --tl-busy-bg: rgba(255, 107, 111, 0.16);
+    --tl-free: #86b6ff;
+    --tl-free-bg: rgba(92, 155, 255, 0.16);
+    --tl-best: #6fe3ac;
+    --tl-best-bg: rgba(62, 207, 142, 0.16);
   }
 }
 

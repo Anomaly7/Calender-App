@@ -112,11 +112,21 @@ function assignLanes(blocks) {
   return placed;
 }
 
+// A group member's own busy block never needs a label - it's obviously
+// yours. Someone else's block shows the part of their email before the
+// @, which is all we have (we only ever store an email, not a display
+// name pulled from their Google profile).
+function ownerLabel(owner, currentUserId) {
+  if (!owner || owner === currentUserId) return null;
+  return owner.split("@")[0];
+}
+
 export default function CalendarView({
   mode,
   busyTimes,
   freeTimes,
   timezone,
+  currentUserId,
   dayStartHour = 8,
   dayEndHour = 22
 }) {
@@ -232,26 +242,31 @@ export default function CalendarView({
                     </div>
                   ))}
 
-                  {busyLaned.map((b, i) => (
-                    <div
-                      key={`busy-${i}`}
-                      className="timeline-block busy"
-                      style={{
-                        top: `${(b.startMin / totalMinutes) * totalHeight}px`,
-                        height: `${Math.max(4, ((b.endMin - b.startMin) / totalMinutes) * totalHeight)}px`,
-                        left: `calc(${(b.lane / b.laneCount) * 100}% + 2px)`,
-                        width: `calc(${100 / b.laneCount}% - 4px)`
-                      }}
-                      title={`Busy ${b.label || ""}`}
-                    >
-                      <div className="block-content">
-                        <span className="block-time">
-                          {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
-                        </span>
-                        <span className="block-sub">{b.label}</span>
+                  {busyLaned.map((b, i) => {
+                    const owner = ownerLabel(b.owner, currentUserId);
+                    return (
+                      <div
+                        key={`busy-${i}`}
+                        className="timeline-block busy"
+                        style={{
+                          top: `${(b.startMin / totalMinutes) * totalHeight}px`,
+                          height: `${Math.max(4, ((b.endMin - b.startMin) / totalMinutes) * totalHeight)}px`,
+                          left: `calc(${(b.lane / b.laneCount) * 100}% + 2px)`,
+                          width: `calc(${100 / b.laneCount}% - 4px)`
+                        }}
+                        title={`Busy ${b.label || ""}${owner ? ` · ${owner}` : ""}`}
+                      >
+                        <div className="block-content">
+                          <span className="block-time">
+                            {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
+                          </span>
+                          <span className="block-sub">
+                            {owner ? owner : b.label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {isToday && showNowLine && (
                     <div
