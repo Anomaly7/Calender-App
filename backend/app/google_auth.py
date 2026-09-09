@@ -97,10 +97,10 @@ def callback(request: Request):
         (user_id,)
     )
 
-    for start, end, raw_timezone in busy:
+    for start, end, raw_timezone, title in busy:
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone) VALUES (?, ?, ?, ?, ?)",
-            (user_id, start.isoformat(), end.isoformat(), "google", raw_timezone)
+            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, start.isoformat(), end.isoformat(), "google", raw_timezone, title)
         )
 
     conn.commit()

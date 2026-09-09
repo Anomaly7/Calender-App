@@ -74,24 +74,24 @@
     <h2>What we access from Google Calendar</h2>
     <p>
       When you connect Google Calendar, TimeFrame requests read-only access
-      (<code>calendar.readonly</code>) to your primary calendar. We only
-      read:
+      (<code>calendar.readonly</code>) to your primary calendar. We read:
     </p>
     <ul>
       <li>The start and end time of each event</li>
       <li>The timezone the event was created in</li>
+      <li>The event's title (if it has one)</li>
     </ul>
     <p>
-      We do <strong>not</strong> read or store event titles, descriptions,
+      We do <strong>not</strong> read or store event descriptions,
       locations, attendees, or any other event details — only the time
-      ranges needed to know when you're busy.
+      range and title needed to show your schedule.
     </p>
 
     <h2>What we store</h2>
     <ul>
       <li>Your Google account email, used as your account identifier</li>
-      <li>Busy time ranges imported from Google Calendar (as described above)</li>
-      <li>Busy time ranges you enter manually through the app</li>
+      <li>Busy time ranges and titles imported from Google Calendar (as described above)</li>
+      <li>Busy time ranges and activity names you enter manually through the app</li>
       <li>Group membership, if you create or join a shared group link</li>
     </ul>
     <p>
@@ -103,10 +103,11 @@
     <h2>Group sharing</h2>
     <p>
       If you join or create a group (via a shared invite link), your busy
-      time ranges — both imported and manually entered — become visible to
-      other members of that same group, so the app can compute a time
-      that works for everyone. Only share a group link with people you're
-      comfortable seeing your availability.
+      time ranges and titles — both imported and manually entered — become
+      visible to other members of that same group, so the app can show
+      whose time is whose and compute a time that works for everyone. Only
+      share a group link with people you're comfortable seeing your
+      availability and event titles.
     </p>
 
     <h2>What we don't do</h2>
