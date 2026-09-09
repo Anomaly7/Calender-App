@@ -59,6 +59,15 @@ function formatHourLabel(hour) {
   return h < 12 ? `${h} AM` : `${h - 12} PM`;
 }
 
+function formatBlockTime(iso, timeZone) {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+}
+
 // Greedy lane assignment so overlapping busy blocks sit side by side
 // instead of stacking on top of each other. Lanes are computed per cluster
 // of mutually-overlapping blocks, not for the whole day at once - a block
@@ -157,26 +166,13 @@ export default function CalendarView({
           </div>
         </div>
 
-        <div className="calendar-days">
-          {dates.map((date) => {
-            const isToday = date === today;
-
-            const dayBusy = busyTimes
-              .filter((b) => b.date === date)
-              .map((b) => ({ ...b, ...toSpan(b.start, b.end) }))
-              .filter((b) => b.endMin > 0 && b.startMin < totalMinutes);
-
-            const busyLaned = assignLanes(dayBusy);
-
-            const dayFree = freeTimes
-              .filter((f) => f.date === date)
-              .map((f) => ({ ...f, ...toSpan(f.start, f.end), isBest: f === best }))
-              .filter((f) => f.endMin > 0 && f.startMin < totalMinutes);
-
-            return (
-              <div className="calendar-day-col" key={date}>
-                {showHeaders && (
-                  <div className={`calendar-day-header ${isToday ? "today" : ""}`}>
+        <div className="calendar-main">
+          {showHeaders && (
+            <div className="calendar-headers-row">
+              {dates.map((date) => {
+                const isToday = date === today;
+                return (
+                  <div className={`calendar-day-header ${isToday ? "today" : ""}`} key={date}>
                     <span className="wd">{weekdayLabel(date)}</span>
                     <span className="md">
                       {isToday ? (
@@ -186,9 +182,29 @@ export default function CalendarView({
                       )}
                     </span>
                   </div>
-                )}
+                );
+              })}
+            </div>
+          )}
 
-                <div className="timeline-track" style={{ height: `${totalHeight}px` }}>
+          <div className="calendar-grid-frame">
+            {dates.map((date) => {
+              const isToday = date === today;
+
+              const dayBusy = busyTimes
+                .filter((b) => b.date === date)
+                .map((b) => ({ ...b, ...toSpan(b.start, b.end) }))
+                .filter((b) => b.endMin > 0 && b.startMin < totalMinutes);
+
+              const busyLaned = assignLanes(dayBusy);
+
+              const dayFree = freeTimes
+                .filter((f) => f.date === date)
+                .map((f) => ({ ...f, ...toSpan(f.start, f.end), isBest: f === best }))
+                .filter((f) => f.endMin > 0 && f.startMin < totalMinutes);
+
+              return (
+                <div className="timeline-track" style={{ height: `${totalHeight}px` }} key={date}>
                   {hourMarks.map((h) => (
                     <div
                       className="timeline-gridline"
@@ -206,7 +222,14 @@ export default function CalendarView({
                         height: `${Math.max(4, ((f.endMin - f.startMin) / totalMinutes) * totalHeight)}px`
                       }}
                       title={`Free · ${f.duration_minutes} min`}
-                    />
+                    >
+                      <div className="block-content">
+                        <span className="block-time">
+                          {formatBlockTime(f.start, timezone)} – {formatBlockTime(f.end, timezone)}
+                        </span>
+                        <span className="block-sub">{f.isBest ? "Best free slot" : "Free"}</span>
+                      </div>
+                    </div>
                   ))}
 
                   {busyLaned.map((b, i) => (
@@ -220,7 +243,14 @@ export default function CalendarView({
                         width: `calc(${100 / b.laneCount}% - 4px)`
                       }}
                       title={`Busy ${b.label || ""}`}
-                    />
+                    >
+                      <div className="block-content">
+                        <span className="block-time">
+                          {formatBlockTime(b.start, timezone)} – {formatBlockTime(b.end, timezone)}
+                        </span>
+                        <span className="block-sub">{b.label}</span>
+                      </div>
+                    </div>
                   ))}
 
                   {isToday && showNowLine && (
@@ -230,9 +260,9 @@ export default function CalendarView({
                     />
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
