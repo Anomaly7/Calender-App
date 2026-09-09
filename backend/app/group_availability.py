@@ -71,6 +71,7 @@ def merge_users_availability(
     # ---- Gather busy times for this user + any group members, all from the DB ----
     today = datetime.now(PST).date()
     member_ids = [user_id]
+    seen_member_keys = {user_id.strip().lower()}
 
     group_id = request.query_params.get("group")
 
@@ -79,11 +80,14 @@ def merge_users_availability(
             "SELECT user_id FROM group_members WHERE group_id = ?",
             (group_id,)
         ).fetchall():
-            if row[0] not in member_ids:
+            member_key = row[0].strip().lower()
+            if member_key not in seen_member_keys:
+                seen_member_keys.add(member_key)
                 member_ids.append(row[0])
 
     all_busy = []
     busy_output = []
+    seen_intervals = set()
 
     for uid in member_ids:
         rows = conn.execute(
@@ -99,6 +103,14 @@ def merge_users_availability(
             # what find_free_time computes free time for by default.
             if start_dt.date() != today:
                 continue
+
+            # Duplicate rows can pile up from things like a stale duplicate
+            # group membership or a re-import - never show the same busy
+            # interval twice.
+            key = (start_dt.isoformat(), end_dt.isoformat())
+            if key in seen_intervals:
+                continue
+            seen_intervals.add(key)
 
             all_busy.append((start_dt, end_dt))
 
@@ -145,10 +157,15 @@ def join_group(group_id: str = Query(...), user_id: str = Query(...)):
         (group_id,)
     )
 
-    already_member = conn.execute(
-        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?",
-        (group_id, user_id)
-    ).fetchone()
+    existing_members = conn.execute(
+        "SELECT user_id FROM group_members WHERE group_id = ?",
+        (group_id,)
+    ).fetchall()
+
+    already_member = any(
+        row[0].strip().lower() == user_id.strip().lower()
+        for row in existing_members
+    )
 
     if not already_member:
         conn.execute(
