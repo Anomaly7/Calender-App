@@ -4,8 +4,11 @@ import "./App.css";
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
 import CalendarView from "./components/CalendarView";
+import SettingsPanel from "./components/SettingsPanel";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+const DEFAULT_SETTINGS = { dayStart: "08:00", dayEnd: "22:00", excludeWeekends: false };
 
 export default function App() {
   // 🔹 MANUAL BUSY SLOTS (input form)
@@ -18,6 +21,12 @@ export default function App() {
 
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem("viewMode") || "day";
+  });
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem("settings");
+    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
   });
 
   // 🔹 MERGED BUSY TIMES (from backend)
@@ -76,13 +85,14 @@ export default function App() {
   // Busy/free times are scoped server-side, so cached results from a
   // previous visit (or an earlier day) are stale as soon as the page
   // loads. Re-fetch automatically instead of waiting for the user to
-  // click "Find Free Time" again.
+  // click "Find Free Time" again - also whenever the day-start/day-end
+  // settings change, since those are query params the backend needs.
   useEffect(() => {
     if (localStorage.getItem("userId")) {
       fetchAvailability(manualBusy).catch(err => console.error(err));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [settings.dayStart, settings.dayEnd]);
 
   // 🔁 Persist everything
   useEffect(() => {
@@ -101,6 +111,10 @@ export default function App() {
     localStorage.setItem("viewMode", viewMode);
   }, [viewMode]);
 
+  useEffect(() => {
+    localStorage.setItem("settings", JSON.stringify(settings));
+  }, [settings]);
+
   async function fetchAvailability(extraBusy = []) {
     const userId = localStorage.getItem("userId");
     if (!userId) return;
@@ -114,7 +128,7 @@ export default function App() {
     const startOffset = -new Date().getDay();
 
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,12 +241,27 @@ export default function App() {
         >
           Week
         </button>
+        <button
+          className="settings-toggle"
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          aria-label="Settings"
+          title="Settings"
+        >
+          ⚙️
+        </button>
       </div>
+
+      {settingsOpen && (
+        <SettingsPanel settings={settings} setSettings={setSettings} />
+      )}
 
       <CalendarView
         mode={viewMode}
         busyTimes={busyTimes}
         freeTimes={freeTimes}
+        excludeWeekends={settings.excludeWeekends}
+        dayStartHour={parseInt(settings.dayStart.split(":")[0], 10)}
+        dayEndHour={parseInt(settings.dayEnd.split(":")[0], 10)}
         timezone={MY_TIMEZONE}
         currentUserId={localStorage.getItem("userId")}
       />

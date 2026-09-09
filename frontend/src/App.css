@@ -337,6 +337,51 @@
   border-bottom-color: var(--accent);
 }
 
+.settings-toggle {
+  margin-left: auto;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.5em 0.3em;
+  font-size: 1rem;
+  line-height: 1;
+}
+.settings-toggle:hover {
+  border-color: transparent;
+  opacity: 0.75;
+}
+
+.settings-panel .settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 0.9rem;
+}
+.settings-panel .settings-row:last-child {
+  margin-bottom: 0;
+}
+
+.settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.settings-checkbox input {
+  width: auto;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .calendar {
   display: flex;
   gap: 0.5rem;

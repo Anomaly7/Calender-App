@@ -142,12 +142,33 @@ export default function CalendarView({
   freeTimes,
   timezone,
   currentUserId,
+  excludeWeekends = false,
   dayStartHour = 8,
   dayEndHour = 22
 }) {
   const today = todayLocal();
   const weekStart = addDays(today, -dayOfWeek(today));
-  const dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [today];
+  let dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [today];
+
+  // Only trims weekend columns from the week grid - Day view should
+  // always show today, even if today happens to be a Saturday/Sunday.
+  if (excludeWeekends && mode === "week") {
+    dates = dates.filter((d) => {
+      const dow = dayOfWeek(d);
+      return dow !== 0 && dow !== 6;
+    });
+  }
+
+  // In week mode, weekends shouldn't be candidates for "best free slot"
+  // either, not just hidden from the grid. In day mode we're always
+  // looking at today specifically, so don't second-guess that even if
+  // today happens to be a weekend.
+  const eligibleFreeTimes = excludeWeekends && mode === "week"
+    ? freeTimes.filter((f) => {
+        const dow = dayOfWeek(f.date);
+        return dow !== 0 && dow !== 6;
+      })
+    : freeTimes;
 
   const totalMinutes = (dayEndHour - dayStartHour) * 60;
   const totalHeight = (dayEndHour - dayStartHour) * PX_PER_HOUR;
@@ -166,7 +187,7 @@ export default function CalendarView({
   const nowMin = wallClockMinutes(now.toISOString(), timezone, dayStartHour);
   const showNowLine = nowMin >= 0 && nowMin <= totalMinutes;
 
-  const best = freeTimes[0];
+  const best = eligibleFreeTimes[0];
   const showHeaders = mode === "week";
 
   const owners = [...new Set(busyTimes.map((b) => b.owner).filter(Boolean))];
