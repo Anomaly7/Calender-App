@@ -226,9 +226,11 @@ export default function CalendarView({
 
               const busyLaned = assignLanes(dayBusy);
 
+              // Free time is just the absence of a block - only the single
+              // best-ranked slot (wherever it falls) gets highlighted.
               const dayFree = freeTimes
-                .filter((f) => f.date === date)
-                .map((f) => ({ ...f, ...toSpan(f.start, f.end), isBest: f === best }))
+                .filter((f) => f.date === date && f === best)
+                .map((f) => ({ ...f, ...toSpan(f.start, f.end) }))
                 .filter((f) => f.endMin > 0 && f.startMin < totalMinutes);
 
               return (
@@ -244,18 +246,18 @@ export default function CalendarView({
                   {dayFree.map((f, i) => (
                     <div
                       key={`free-${i}`}
-                      className={`timeline-block free ${f.isBest ? "best" : ""}`}
+                      className="timeline-block best-free"
                       style={{
                         top: `${(f.startMin / totalMinutes) * totalHeight}px`,
                         height: `${Math.max(4, ((f.endMin - f.startMin) / totalMinutes) * totalHeight)}px`
                       }}
-                      title={`Free · ${f.duration_minutes} min`}
+                      title={`Best free slot · ${f.duration_minutes} min`}
                     >
                       <div className="block-content">
                         <span className="block-time">
                           {formatBlockTime(f.start, timezone)} – {formatBlockTime(f.end, timezone)}
                         </span>
-                        <span className="block-sub">{f.isBest ? "Best free slot" : "Free"}</span>
+                        <span className="block-sub">Best free slot</span>
                       </div>
                     </div>
                   ))}
@@ -317,8 +319,7 @@ export default function CalendarView({
             {owner === currentUserId ? "You" : ownerLabel(owner, null)}
           </span>
         ))}
-        <span><span className="swatch free" /> Free</span>
-        <span><span className="swatch free best" /> Best free slot</span>
+        <span><span className="swatch best-free" /> Best free slot</span>
       </div>
     </div>
   );
