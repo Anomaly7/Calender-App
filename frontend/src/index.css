@@ -16,6 +16,17 @@
   --radius: 12px;
   --radius-sm: 8px;
 
+  /* Timeline: solid, evenly-weighted colors so busy/free/best all read
+     with the same contrast - deliberately separate from the semantic
+     danger/success/accent tokens used elsewhere in the UI. */
+  --grid-line: #d5d8e6;
+  --tl-busy: #e5484d;
+  --tl-busy-text: #ffffff;
+  --tl-free: #4285f4;
+  --tl-free-text: #ffffff;
+  --tl-best: #1a9b6a;
+  --tl-best-text: #ffffff;
+
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -45,6 +56,14 @@
     --success: #3ecf8e;
     --success-soft: #163429;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.35);
+
+    --grid-line: #3a3d55;
+    --tl-busy: #e5484d;
+    --tl-busy-text: #ffffff;
+    --tl-free: #5c9bff;
+    --tl-free-text: #0b1220;
+    --tl-best: #3ecf8e;
+    --tl-best-text: #0b1220;
   }
 }
 
