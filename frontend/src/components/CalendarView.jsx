@@ -99,6 +99,7 @@ export default function CalendarView({
   const showNowLine = nowMin >= 0 && nowMin <= totalMinutes;
 
   const best = freeTimes[0];
+  const showHeaders = mode === "week";
 
   return (
     <div className="card">
@@ -108,7 +109,7 @@ export default function CalendarView({
 
       <div className="calendar">
         <div className="calendar-hours">
-          <div className="calendar-header-spacer" />
+          {showHeaders && <div className="calendar-header-spacer" />}
           <div className="calendar-hours-track" style={{ height: `${totalHeight}px` }}>
             {hourMarks.map((h) => (
               <div
@@ -140,10 +141,12 @@ export default function CalendarView({
 
             return (
               <div className="calendar-day-col" key={date}>
-                <div className={`calendar-day-header ${isToday ? "today" : ""}`}>
-                  <span className="wd">{weekdayLabel(date)}</span>
-                  <span className="md">{monthDayLabel(date)}</span>
-                </div>
+                {showHeaders && (
+                  <div className={`calendar-day-header ${isToday ? "today" : ""}`}>
+                    <span className="wd">{weekdayLabel(date)}</span>
+                    <span className="md">{monthDayLabel(date)}</span>
+                  </div>
+                )}
 
                 <div className="timeline-track" style={{ height: `${totalHeight}px` }}>
                   {hourMarks.map((h) => (
