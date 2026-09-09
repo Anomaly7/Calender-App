@@ -186,7 +186,7 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <span className="brand-mark">🗓️</span>
-          <h1>Lookout</h1>
+          <h1>Timeframe</h1>
         </div>
         {email && (
           <div className="user-chip">
