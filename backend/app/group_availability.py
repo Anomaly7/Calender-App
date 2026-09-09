@@ -23,68 +23,9 @@ def merge_users_availability(
     day_start_time = time.fromisoformat(day_start)
     day_end_time = time.fromisoformat(day_end)
 
-    # ---- Load user's stored busy times (Google + manual) ----
-    own_rows = conn.execute(
-        "SELECT start, end, source FROM busy_times WHERE user_id = ?",
-        (user_id,)
-    ).fetchall()
+    # ---- Normalize this request's manually-submitted busy blocks ----
+    manual_blocks = []
 
-    db_busy = [
-        (
-            datetime.fromisoformat(start).astimezone(PST),
-            datetime.fromisoformat(end).astimezone(PST)
-        )
-        for start, end, source in own_rows
-    ]
-
-    if db_busy:
-        users_busy.append(db_busy)
-
-    # Track which stored intervals came from Google so they can be labeled
-    google_busy = {
-        (
-            datetime.fromisoformat(start).astimezone(PST),
-            datetime.fromisoformat(end).astimezone(PST)
-        )
-        for start, end, source in own_rows
-        if source == "google"
-    }
-
-    all_busy = []
-    busy_output = []
-    today = datetime.now(PST).date()
-
-    group_id = request.query_params.get("group")
-
-    if group_id:
-        members = [
-            row[0] for row in conn.execute(
-                "SELECT user_id FROM group_members WHERE group_id = ?",
-                (group_id,)
-            ).fetchall()
-        ]
-
-        for uid in members:
-            member_rows = conn.execute(
-                "SELECT start, end, source FROM busy_times WHERE user_id = ?",
-                (uid,)
-            ).fetchall()
-
-            blocks = [
-                (datetime.fromisoformat(s), datetime.fromisoformat(e))
-                for s, e, source in member_rows
-            ]
-
-            google_busy.update(
-                (datetime.fromisoformat(s), datetime.fromisoformat(e))
-                for s, e, source in member_rows
-                if source == "google"
-            )
-
-            if blocks:
-                users_busy.append(blocks)
-
-    # ---- Normalize all busy blocks ----
     for user in users_busy:
 
         if isinstance(user, dict):
@@ -102,22 +43,69 @@ def merge_users_availability(
 
             if start_dt.tzinfo is None:
                 start_dt = start_dt.replace(tzinfo=PST)
+            else:
+                start_dt = start_dt.astimezone(PST)
+
             if end_dt.tzinfo is None:
                 end_dt = end_dt.replace(tzinfo=PST)
+            else:
+                end_dt = end_dt.astimezone(PST)
+
+            manual_blocks.append((start_dt, end_dt))
+
+    # Persist them so other group members can see this user's busy times too -
+    # previously manual entries only ever lived in this one response.
+    conn.execute(
+        "DELETE FROM busy_times WHERE user_id = ? AND source = 'manual'",
+        (user_id,)
+    )
+
+    for start_dt, end_dt in manual_blocks:
+        conn.execute(
+            "INSERT INTO busy_times (user_id, start, end, source) VALUES (?, ?, ?, ?)",
+            (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual")
+        )
+
+    conn.commit()
+
+    # ---- Gather busy times for this user + any group members, all from the DB ----
+    today = datetime.now(PST).date()
+    member_ids = [user_id]
+
+    group_id = request.query_params.get("group")
+
+    if group_id:
+        for row in conn.execute(
+            "SELECT user_id FROM group_members WHERE group_id = ?",
+            (group_id,)
+        ).fetchall():
+            if row[0] not in member_ids:
+                member_ids.append(row[0])
+
+    all_busy = []
+    busy_output = []
+
+    for uid in member_ids:
+        rows = conn.execute(
+            "SELECT start, end, source FROM busy_times WHERE user_id = ?",
+            (uid,)
+        ).fetchall()
+
+        for start, end, source in rows:
+            start_dt = datetime.fromisoformat(start).astimezone(PST)
+            end_dt = datetime.fromisoformat(end).astimezone(PST)
 
             # Only consider busy time that falls on today (PST) - matches
             # what find_free_time computes free time for by default.
-            if start_dt.astimezone(PST).date() != today:
+            if start_dt.date() != today:
                 continue
 
             all_busy.append((start_dt, end_dt))
 
-            label = "(imported)" if (start_dt, end_dt) in google_busy else "(manual)"
-
             busy_output.append({
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
-                "label": label
+                "label": "(imported)" if source == "google" else "(manual)"
             })
 
     # ---- Merge busy intervals ----

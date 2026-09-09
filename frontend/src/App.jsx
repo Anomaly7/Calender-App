@@ -31,15 +31,23 @@ export default function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (!groupIdFromLink) return;
+    if (groupIdFromLink) {
+      localStorage.setItem("groupId", groupIdFromLink);
+    }
+  }, [groupIdFromLink]);
 
-    localStorage.setItem("groupId", groupIdFromLink);
-
+  useEffect(() => {
+    // Google's OAuth redirect drops the ?group= param, so by the time we
+    // learn the userId (from the redirect) the group id may only be in
+    // localStorage, not the URL. Check both so the join actually happens
+    // regardless of which one arrives first.
     const joiningUserId = userId || localStorage.getItem("userId");
-    if (!joiningUserId) return;
+    const joiningGroupId = groupIdFromLink || localStorage.getItem("groupId");
+
+    if (!joiningUserId || !joiningGroupId) return;
 
     fetch(
-      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${groupIdFromLink}&user_id=${joiningUserId}`,
+      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${joiningGroupId}&user_id=${joiningUserId}`,
       { method: "POST" }
     );
   }, [groupIdFromLink, userId]);
