@@ -2,9 +2,8 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Body, Query, Request
 from datetime import datetime, time, timedelta
 from app.availability import merge_intervals, find_free_time, score_slot
-from app.db import cursor
+from app.db import conn
 
-days: int = Query(1)
 router = APIRouter()
 PST = ZoneInfo("America/Los_Angeles")
 
@@ -26,22 +25,31 @@ def merge_users_availability(
     day_end_time = time.fromisoformat(day_end)
 
     # ---- Load user's stored busy times (Google + manual) ----
-    cursor.execute(
-        "SELECT start, end FROM busy_times WHERE user_id = ?",
+    own_rows = conn.execute(
+        "SELECT start, end, source FROM busy_times WHERE user_id = ?",
         (user_id,)
-    )
+    ).fetchall()
 
     db_busy = [
         (
             datetime.fromisoformat(start).astimezone(PST),
             datetime.fromisoformat(end).astimezone(PST)
         )
-        for start, end in cursor.fetchall()
+        for start, end, source in own_rows
     ]
 
     if db_busy:
         users_busy.append(db_busy)
 
+    # Track which stored intervals came from Google so they can be labeled
+    google_busy = {
+        (
+            datetime.fromisoformat(start).astimezone(PST),
+            datetime.fromisoformat(end).astimezone(PST)
+        )
+        for start, end, source in own_rows
+        if source == "google"
+    }
 
     all_busy = []
     busy_output = []
@@ -50,23 +58,29 @@ def merge_users_availability(
     group_id = request.query_params.get("group")
 
     if group_id:
-        cursor.execute(
-            "SELECT user_id FROM group_members WHERE group_id = ?",
-            (group_id,)
-        )
-
-        members = [row[0] for row in cursor.fetchall()]
+        members = [
+            row[0] for row in conn.execute(
+                "SELECT user_id FROM group_members WHERE group_id = ?",
+                (group_id,)
+            ).fetchall()
+        ]
 
         for uid in members:
-            cursor.execute(
-                "SELECT start, end FROM busy_times WHERE user_id = ?",
+            member_rows = conn.execute(
+                "SELECT start, end, source FROM busy_times WHERE user_id = ?",
                 (uid,)
-            )
+            ).fetchall()
 
             blocks = [
                 (datetime.fromisoformat(s), datetime.fromisoformat(e))
-                for s, e in cursor.fetchall()
+                for s, e, source in member_rows
             ]
+
+            google_busy.update(
+                (datetime.fromisoformat(s), datetime.fromisoformat(e))
+                for s, e, source in member_rows
+                if source == "google"
+            )
 
             if blocks:
                 users_busy.append(blocks)
@@ -94,10 +108,7 @@ def merge_users_availability(
 
             all_busy.append((start_dt, end_dt))
 
-            label = "(imported)" if (
-                hasattr(request.app.state, "google_busy")
-                and (start_dt, end_dt) in request.app.state.google_busy
-            ) else "(manual)"
+            label = "(imported)" if (start_dt, end_dt) in google_busy else "(manual)"
 
             busy_output.append({
                 "start": start_dt.isoformat(),
@@ -141,17 +152,21 @@ def merge_users_availability(
 
 @router.post("/groups/join")
 def join_group(group_id: str = Query(...), user_id: str = Query(...)):
-    from app.db import cursor, conn
-
-    cursor.execute(
+    conn.execute(
         "INSERT OR IGNORE INTO groups (id) VALUES (?)",
         (group_id,)
     )
 
-    cursor.execute(
-        "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+    already_member = conn.execute(
+        "SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?",
         (group_id, user_id)
-    )
+    ).fetchone()
+
+    if not already_member:
+        conn.execute(
+            "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)",
+            (group_id, user_id)
+        )
 
     conn.commit()
     return {"joined": True}

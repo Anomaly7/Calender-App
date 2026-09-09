@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 from starlette.responses import RedirectResponse
 from app.availability import parse_event, find_free_time
 from datetime import datetime, timedelta
-from app.db import cursor, conn
+from app.db import conn
 
 
 router = APIRouter()
@@ -25,7 +25,12 @@ def get_flow():
                 "redirect_uris": [os.getenv("REDIRECT_URI")]
             }
         },
-        scopes=SCOPES
+        scopes=SCOPES,
+        # /auth/login and /auth/callback are separate requests, each building
+        # a fresh Flow, so there's no way to carry a PKCE code_verifier
+        # between them. This is a confidential client (has a client_secret),
+        # so PKCE isn't required — disable it rather than losing the verifier.
+        autogenerate_code_verifier=False
     )
 
 @router.get("/auth/login")
@@ -51,7 +56,7 @@ def callback(request: Request):
     service = build("calendar", "v3", credentials=credentials)
 
     now = datetime.utcnow().isoformat() + "Z"
-    end = (datetime.utcnow() + timedelta(days=1)).isoformat() + "Z"
+    end = (datetime.utcnow() + timedelta(days=14)).isoformat() + "Z"
 
     # Use calendar account email as user identity
     calendar = build("calendar", "v3", credentials=credentials)
@@ -61,7 +66,7 @@ def callback(request: Request):
     user_id = email               # simple + stable
 
 
-    cursor.execute(
+    conn.execute(
         "INSERT OR IGNORE INTO users (id, email) VALUES (?, ?)",
         (user_id, email)
     )
@@ -84,13 +89,13 @@ def callback(request: Request):
     busy = [parse_event(e) for e in events]
 
     # Store Google Calendar busy times for later merging
-    cursor.execute(
+    conn.execute(
         "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
         (user_id,)
     )
 
     for start, end in busy:
-        cursor.execute(
+        conn.execute(
             "INSERT INTO busy_times (user_id, start, end, source) VALUES (?, ?, ?, ?)",
             (user_id, start.isoformat(), end.isoformat(), "google")
         )
@@ -102,41 +107,51 @@ def callback(request: Request):
 
 @router.get("/auth/status")
 def google_status(request: Request):
-    return {
-        "connected": hasattr(request.app.state, "google_busy")
-    }
+    user_id = request.query_params.get("user")
+    if not user_id:
+        return {"connected": False}
+
+    row = conn.execute(
+        "SELECT 1 FROM busy_times WHERE user_id = ? AND source = 'google' LIMIT 1",
+        (user_id,)
+    ).fetchone()
+
+    return {"connected": row is not None}
 
 @router.post("/auth/disconnect")
 def disconnect_google(request: Request):
-    if hasattr(request.app.state, "google_busy"):
-        del request.app.state.google_busy
+    user_id = request.query_params.get("user")
+    if not user_id:
+        return {"disconnected": True}
+
+    conn.execute(
+        "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
+        (user_id,)
+    )
+    conn.commit()
+
     return {"disconnected": True}
 
 @router.get("/auth/me")
 def me(request: Request):
-    from app.db import cursor
-
     user_id = request.query_params.get("user")
     if not user_id:
         return {"email": None}
 
-    cursor.execute(
+    row = conn.execute(
         "SELECT email FROM users WHERE id = ?",
         (user_id,)
-    )
+    ).fetchone()
 
-    row = cursor.fetchone()
     return {"email": row[0] if row else None}
 
 @router.post("/auth/logout")
 def logout(request: Request):
-    from app.db import cursor, conn
-
     user_id = request.query_params.get("user")
     if not user_id:
         return {"logged_out": True}
 
-    cursor.execute(
+    conn.execute(
         "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
         (user_id,)
     )

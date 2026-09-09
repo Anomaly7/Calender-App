@@ -1,16 +1,15 @@
 import sqlite3
 
 conn = sqlite3.connect("calendar.db", check_same_thread=False)
-cursor = conn.cursor()
 
-cursor.execute("""
+conn.execute("""
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT
 )
 """)
 
-cursor.execute("""
+conn.execute("""
 CREATE TABLE IF NOT EXISTS busy_times (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT,
@@ -22,13 +21,13 @@ CREATE TABLE IF NOT EXISTS busy_times (
 
 conn.commit()
 
-cursor.execute("""
+conn.execute("""
 CREATE TABLE IF NOT EXISTS groups (
     id TEXT PRIMARY KEY
 )
 """)
 
-cursor.execute("""
+conn.execute("""
 CREATE TABLE IF NOT EXISTS group_members (
     group_id TEXT,
     user_id TEXT
