@@ -1,21 +1,38 @@
 export default function Results({ slots, timezone }) {
-  if (!slots.length) return null;
-
   return (
-    <div>
-      <h3>Best Free Times</h3>
+    <div className="card">
+      <div className="card-title">
+        <h2>Best Free Times</h2>
+      </div>
 
-      <ul>
-        {slots.map((slot, i) => (
-          <li key={i}>
-            {new Date(slot.start).toLocaleTimeString(undefined, { timeZone: timezone })} –{" "}
-            {new Date(slot.end).toLocaleTimeString(undefined, { timeZone: timezone })}
-            {" "}({formatDuration(slot.duration_minutes)})
-          </li>
-        ))}
-      </ul>
+      {slots.length === 0 ? (
+        <p className="empty-state">
+          No free slots yet — connect Google Calendar or add busy times, then find free time.
+        </p>
+      ) : (
+        <ul className="free-list">
+          {slots.map((slot, i) => (
+            <li className={`free-item ${i === 0 ? "best" : ""}`} key={i}>
+              <span>
+                {i === 0 && <span className="best-badge">Best</span>}
+                {formatTime(slot.start, timezone)} – {formatTime(slot.end, timezone)}
+              </span>
+              <span className="duration">{formatDuration(slot.duration_minutes)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
+}
+
+function formatTime(iso, timeZone) {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
 
 function formatDuration(minutes) {
