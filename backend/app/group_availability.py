@@ -135,7 +135,7 @@ def merge_users_availability(
                 "date": start_dt.date().isoformat(),
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
-                "label": "(imported)" if source == "google" else "(manual)",
+                "label": {"google": "(imported)", "ics": "(ics)"}.get(source, "(manual)"),
                 "title": title or None,
                 "owner": uid,
                 "source_timezone": raw_timezone
