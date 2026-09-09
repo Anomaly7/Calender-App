@@ -91,11 +91,11 @@ def merge_users_availability(
 
     for uid in member_ids:
         rows = conn.execute(
-            "SELECT start, end, source FROM busy_times WHERE user_id = ?",
+            "SELECT start, end, source, raw_timezone FROM busy_times WHERE user_id = ?",
             (uid,)
         ).fetchall()
 
-        for start, end, source in rows:
+        for start, end, source, raw_timezone in rows:
             start_dt = datetime.fromisoformat(start).astimezone(PST)
             end_dt = datetime.fromisoformat(end).astimezone(PST)
 
@@ -117,7 +117,8 @@ def merge_users_availability(
             busy_output.append({
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
-                "label": "(imported)" if source == "google" else "(manual)"
+                "label": "(imported)" if source == "google" else "(manual)",
+                "source_timezone": raw_timezone
             })
 
     # ---- Merge busy intervals ----
