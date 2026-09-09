@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.google_auth import router as google_router
 from dotenv import load_dotenv
 from app.group_availability import router as group_router
+from app.calendar_import import router as import_router
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(group_router)
 app.include_router(google_router)
+app.include_router(import_router)
 
 @app.get("/")
 def root():
