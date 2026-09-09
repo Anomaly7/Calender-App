@@ -485,19 +485,13 @@
 .timeline-block.busy.person-4 { background: var(--person-4-bg); border-left-color: var(--person-4); color: var(--person-4); }
 .timeline-block.busy.person-5 { background: var(--person-5-bg); border-left-color: var(--person-5); color: var(--person-5); }
 
-.timeline-block.free {
+.timeline-block.best-free {
   left: 2px;
   right: 2px;
-  background: var(--tl-free-bg);
-  border-left-color: var(--tl-free);
-  color: var(--tl-free);
-  z-index: 0;
-}
-
-.timeline-block.free.best {
   background: var(--tl-best-bg);
   border-left-color: var(--tl-best);
   color: var(--tl-best);
+  z-index: 0;
 }
 
 .timeline-now-line {
@@ -545,10 +539,6 @@
 .timeline-legend .swatch.person-4 { background: var(--person-4); }
 .timeline-legend .swatch.person-5 { background: var(--person-5); }
 
-.timeline-legend .swatch.free {
-  background: var(--tl-free);
-}
-
-.timeline-legend .swatch.free.best {
+.timeline-legend .swatch.best-free {
   background: var(--tl-best);
 }

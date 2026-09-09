@@ -23,8 +23,6 @@
   --grid-line: #d5d8e6;
   --tl-busy: #d1373d;
   --tl-busy-bg: rgba(229, 72, 77, 0.14);
-  --tl-free: #2f6fda;
-  --tl-free-bg: rgba(66, 133, 244, 0.13);
   --tl-best: #158a5c;
   --tl-best-bg: rgba(26, 155, 106, 0.14);
 
@@ -78,8 +76,6 @@
     --grid-line: #3a3d55;
     --tl-busy: #ff8a8d;
     --tl-busy-bg: rgba(255, 107, 111, 0.16);
-    --tl-free: #86b6ff;
-    --tl-free-bg: rgba(92, 155, 255, 0.16);
     --tl-best: #6fe3ac;
     --tl-best-bg: rgba(62, 207, 142, 0.16);
 
