@@ -1,6 +1,6 @@
 from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Body, Query, Request
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from app.availability import merge_intervals, find_free_time, score_slot
 from app.db import conn
 
@@ -15,7 +15,8 @@ def merge_users_availability(
     min_minutes: int = Query(30),
     day_start: str = Query("08:00"),
     day_end: str = Query("22:00"),
-    timezone: str = Query(None)
+    timezone: str = Query(None),
+    days: int = Query(1)
     ):
 
     # The viewer's own current timezone - "today", business hours, and
@@ -81,6 +82,7 @@ def merge_users_availability(
 
     # ---- Gather busy times for this user + any group members, all from the DB ----
     today = datetime.now(viewer_tz).date()
+    date_range = {today + timedelta(days=i) for i in range(days)}
     member_ids = [user_id]
     seen_member_keys = {user_id.strip().lower()}
 
@@ -110,9 +112,9 @@ def merge_users_availability(
             start_dt = datetime.fromisoformat(start).astimezone(viewer_tz)
             end_dt = datetime.fromisoformat(end).astimezone(viewer_tz)
 
-            # Only consider busy time that falls on the viewer's today -
+            # Only consider busy time that falls within the requested range -
             # matches what find_free_time computes free time for.
-            if start_dt.date() != today:
+            if start_dt.date() not in date_range:
                 continue
 
             # Duplicate rows can pile up from things like a stale duplicate
@@ -126,6 +128,7 @@ def merge_users_availability(
             all_busy.append((start_dt, end_dt))
 
             busy_output.append({
+                "date": start_dt.date().isoformat(),
                 "start": start_dt.isoformat(),
                 "end": end_dt.isoformat(),
                 "label": "(imported)" if source == "google" else "(manual)",
@@ -136,26 +139,27 @@ def merge_users_availability(
     # ---- Merge busy intervals ----
     merged_busy = merge_intervals(all_busy)
 
-    # ---- Compute free time (today only) ----
+    # ---- Compute free time for each requested day ----
     results = []
 
-    free_slots = find_free_time(
-        merged_busy,
-        target_date=today,
-        day_start=day_start_time,
-        day_end=day_end_time,
-        min_minutes=min_minutes,
-        tz=viewer_tz
-    )
+    for target_date in sorted(date_range):
+        free_slots = find_free_time(
+            merged_busy,
+            target_date=target_date,
+            day_start=day_start_time,
+            day_end=day_end_time,
+            min_minutes=min_minutes,
+            tz=viewer_tz
+        )
 
-    for start, end in free_slots:
-        results.append({
-            "date": today.isoformat(),
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-            "duration_minutes": int((end - start).total_seconds() / 60),
-            "score": score_slot(start, end)
-        })
+        for start, end in free_slots:
+            results.append({
+                "date": target_date.isoformat(),
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "duration_minutes": int((end - start).total_seconds() / 60),
+                "score": score_slot(start, end)
+            })
 
     results.sort(key=lambda x: x["score"], reverse=True)
 

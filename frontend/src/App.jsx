@@ -3,21 +3,9 @@ import "./App.css";
 
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
-import Results from "./components/Results";
-import DayTimeline from "./components/DayTimeline";
+import CalendarView from "./components/CalendarView";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-function formatDateTime(iso, timeZone) {
-  return new Date(iso).toLocaleString(undefined, {
-    timeZone,
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
-}
 
 export default function App() {
   // 🔹 MANUAL BUSY SLOTS (input form)
@@ -27,6 +15,10 @@ export default function App() {
   });
 
   const [email, setEmail] = useState(null);
+
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("viewMode") || "day";
+  });
 
   // 🔹 MERGED BUSY TIMES (from backend)
   const [busyTimes, setBusyTimes] = useState(() => {
@@ -81,9 +73,9 @@ export default function App() {
       .then(data => setEmail(data.email));
   }, []);
 
-  // Busy/free times are scoped to "today" server-side, so cached results
-  // from a previous visit (or an earlier day) are stale as soon as the
-  // page loads. Re-fetch automatically instead of waiting for the user to
+  // Busy/free times are scoped server-side, so cached results from a
+  // previous visit (or an earlier day) are stale as soon as the page
+  // loads. Re-fetch automatically instead of waiting for the user to
   // click "Find Free Time" again.
   useEffect(() => {
     if (localStorage.getItem("userId")) {
@@ -106,11 +98,8 @@ export default function App() {
   }, [freeTimes]);
 
   useEffect(() => {
-    if (manualBusy.length > 0) {
-      // optional: auto re-run availability on reload
-      console.log("Loaded saved busy slots:", manualBusy);
-    }
-  }, []);
+    localStorage.setItem("viewMode", viewMode);
+  }, [viewMode]);
 
   async function fetchAvailability(extraBusy = []) {
     const userId = localStorage.getItem("userId");
@@ -119,8 +108,10 @@ export default function App() {
     const groupId = localStorage.getItem("groupId");
     const groupParam = groupId ? `&group=${groupId}` : "";
 
+    // Always fetch a full week so switching between the Day and Week tabs
+    // is instant and doesn't need a fresh request.
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=08:00&day_end=22:00&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,17 +178,6 @@ export default function App() {
   }
 
 
-  const currentUserId = localStorage.getItem("userId");
-  const busyTimesWithTz = busyTimes.map((b) => {
-    const isMine = b.owner === currentUserId;
-    return {
-      ...b,
-      isMine,
-      displayTz: isMine ? MY_TIMEZONE : (b.source_timezone || "America/Los_Angeles")
-    };
-  });
-  const freeTimesWithTz = freeTimes.map((f) => ({ ...f, displayTz: MY_TIMEZONE }));
-
   return (
     <div className="app">
       <header className="app-header">
@@ -228,35 +208,30 @@ export default function App() {
 
       <p className="tz-note">
         🌐 Your times: <strong>{MY_TIMEZONE}</strong> · Other group members'
-        times are shown in the zone they were originally entered in
+        times are shown relative to this same timezone
       </p>
 
-      <div className="card">
-        <div className="card-title">
-          <h2>Busy Times</h2>
-        </div>
-
-        {busyTimesWithTz.length === 0 ? (
-          <p className="empty-state">No busy times found for today.</p>
-        ) : (
-          <ul className="busy-list">
-            {busyTimesWithTz.map((b, i) => (
-              <li className="busy-item" key={i}>
-                <span>
-                  {formatDateTime(b.start, b.displayTz)} → {formatDateTime(b.end, b.displayTz)}
-                </span>
-                <span className="label">
-                  {b.label}{!b.isMine && ` · ${b.displayTz}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="tabs">
+        <button
+          className={`tab ${viewMode === "day" ? "active" : ""}`}
+          onClick={() => setViewMode("day")}
+        >
+          Day
+        </button>
+        <button
+          className={`tab ${viewMode === "week" ? "active" : ""}`}
+          onClick={() => setViewMode("week")}
+        >
+          Week
+        </button>
       </div>
 
-      <Results slots={freeTimes} timezone={MY_TIMEZONE} />
-
-      <DayTimeline busyTimes={busyTimesWithTz} freeTimes={freeTimesWithTz} timezone={MY_TIMEZONE} />
+      <CalendarView
+        mode={viewMode}
+        busyTimes={busyTimes}
+        freeTimes={freeTimes}
+        timezone={MY_TIMEZONE}
+      />
     </div>
   );
 }
