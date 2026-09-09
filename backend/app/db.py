@@ -19,6 +19,12 @@ CREATE TABLE IF NOT EXISTS busy_times (
 )
 """)
 
+# CREATE TABLE IF NOT EXISTS above won't retrofit this column onto a
+# database that already exists (e.g. in production), so add it explicitly.
+existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(busy_times)").fetchall()}
+if "raw_timezone" not in existing_columns:
+    conn.execute("ALTER TABLE busy_times ADD COLUMN raw_timezone TEXT")
+
 conn.commit()
 
 conn.execute("""

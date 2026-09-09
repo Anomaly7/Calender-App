@@ -193,13 +193,23 @@ export default function App() {
         Create Group Link
       </button>
       {email && <p>Logged in as: <strong>{email}</strong></p>}
+      <p style={{ color: "#666", fontSize: "0.9em" }}>
+        Times shown in: <strong>America/Los_Angeles (Pacific)</strong>
+        {" "}| Your browser's timezone:{" "}
+        <strong>{Intl.DateTimeFormat().resolvedOptions().timeZone}</strong>
+      </p>
       <h3>Busy Times</h3>
-      
+
       <ul>
         {busyTimes.map((b, i) => (
           <li key={i}>
             {new Date(b.start).toLocaleString()} →{" "}
             {new Date(b.end).toLocaleString()} {b.label}
+            {b.source_timezone && b.source_timezone !== "America/Los_Angeles" && (
+              <span style={{ color: "red" }}>
+                {" "}(source event timezone: {b.source_timezone})
+              </span>
+            )}
           </li>
         ))}
       </ul>
