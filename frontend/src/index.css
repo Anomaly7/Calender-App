@@ -28,6 +28,22 @@
   --tl-best: #158a5c;
   --tl-best-bg: rgba(26, 155, 106, 0.14);
 
+  /* Per-person colors for busy blocks, so whose time is whose is visible
+     at a glance in a group view, not just from the text label. Index 0
+     is always "you". */
+  --person-0: #2f6fda;
+  --person-0-bg: rgba(66, 133, 244, 0.14);
+  --person-1: #c2660d;
+  --person-1-bg: rgba(255, 149, 0, 0.16);
+  --person-2: #7c3aed;
+  --person-2-bg: rgba(124, 58, 237, 0.14);
+  --person-3: #c2266d;
+  --person-3-bg: rgba(219, 39, 119, 0.14);
+  --person-4: #0f8a82;
+  --person-4-bg: rgba(20, 184, 166, 0.15);
+  --person-5: #b45309;
+  --person-5-bg: rgba(217, 119, 6, 0.15);
+
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -66,6 +82,19 @@
     --tl-free-bg: rgba(92, 155, 255, 0.16);
     --tl-best: #6fe3ac;
     --tl-best-bg: rgba(62, 207, 142, 0.16);
+
+    --person-0: #8ab4ff;
+    --person-0-bg: rgba(138, 180, 255, 0.18);
+    --person-1: #ffb15c;
+    --person-1-bg: rgba(255, 177, 92, 0.18);
+    --person-2: #b794f6;
+    --person-2-bg: rgba(183, 148, 246, 0.18);
+    --person-3: #f472b6;
+    --person-3-bg: rgba(244, 114, 182, 0.18);
+    --person-4: #5eead4;
+    --person-4-bg: rgba(94, 234, 212, 0.16);
+    --person-5: #fbbf24;
+    --person-5-bg: rgba(251, 191, 36, 0.16);
   }
 }
 

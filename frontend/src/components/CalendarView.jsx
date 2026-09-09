@@ -1,4 +1,5 @@
-const PX_PER_HOUR = 44;
+const PX_PER_HOUR = 60;
+const PERSON_COLOR_COUNT = 6;
 
 function todayLocal() {
   const d = new Date();
@@ -121,6 +122,20 @@ function ownerLabel(owner, currentUserId) {
   return owner.split("@")[0];
 }
 
+// Deterministic color per person: you always get index 0, everyone else
+// gets the remaining slots in alphabetical order (stable across refetches,
+// unlike first-seen order which can shift as data comes back in a
+// different order).
+function assignPersonColors(owners, currentUserId) {
+  const others = owners.filter((o) => o !== currentUserId).sort();
+  const ordered = currentUserId ? [currentUserId, ...others] : others;
+  const colorByOwner = {};
+  ordered.forEach((owner, i) => {
+    colorByOwner[owner] = i % PERSON_COLOR_COUNT;
+  });
+  return colorByOwner;
+}
+
 export default function CalendarView({
   mode,
   busyTimes,
@@ -153,6 +168,9 @@ export default function CalendarView({
 
   const best = freeTimes[0];
   const showHeaders = mode === "week";
+
+  const owners = [...new Set(busyTimes.map((b) => b.owner).filter(Boolean))];
+  const personColorByOwner = assignPersonColors(owners, currentUserId);
 
   return (
     <div className="card">
@@ -244,10 +262,11 @@ export default function CalendarView({
 
                   {busyLaned.map((b, i) => {
                     const owner = ownerLabel(b.owner, currentUserId);
+                    const personIdx = personColorByOwner[b.owner] ?? 0;
                     return (
                       <div
                         key={`busy-${i}`}
-                        className="timeline-block busy"
+                        className={`timeline-block busy person-${personIdx}`}
                         style={{
                           top: `${(b.startMin / totalMinutes) * totalHeight}px`,
                           height: `${Math.max(4, ((b.endMin - b.startMin) / totalMinutes) * totalHeight)}px`,
@@ -292,7 +311,12 @@ export default function CalendarView({
       </div>
 
       <div className="timeline-legend">
-        <span><span className="swatch busy" /> Busy</span>
+        {owners.map((owner) => (
+          <span key={owner}>
+            <span className={`swatch person-${personColorByOwner[owner]}`} />
+            {owner === currentUserId ? "You" : ownerLabel(owner, null)}
+          </span>
+        ))}
         <span><span className="swatch free" /> Free</span>
         <span><span className="swatch free best" /> Best free slot</span>
       </div>

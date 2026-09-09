@@ -1,5 +1,5 @@
 .app {
-  max-width: 760px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
 }
@@ -478,6 +478,13 @@
   z-index: 1;
 }
 
+.timeline-block.busy.person-0 { background: var(--person-0-bg); border-left-color: var(--person-0); color: var(--person-0); }
+.timeline-block.busy.person-1 { background: var(--person-1-bg); border-left-color: var(--person-1); color: var(--person-1); }
+.timeline-block.busy.person-2 { background: var(--person-2-bg); border-left-color: var(--person-2); color: var(--person-2); }
+.timeline-block.busy.person-3 { background: var(--person-3-bg); border-left-color: var(--person-3); color: var(--person-3); }
+.timeline-block.busy.person-4 { background: var(--person-4-bg); border-left-color: var(--person-4); color: var(--person-4); }
+.timeline-block.busy.person-5 { background: var(--person-5-bg); border-left-color: var(--person-5); color: var(--person-5); }
+
 .timeline-block.free {
   left: 2px;
   right: 2px;
@@ -530,6 +537,13 @@
   vertical-align: -0.05rem;
   background: var(--tl-busy);
 }
+
+.timeline-legend .swatch.person-0 { background: var(--person-0); }
+.timeline-legend .swatch.person-1 { background: var(--person-1); }
+.timeline-legend .swatch.person-2 { background: var(--person-2); }
+.timeline-legend .swatch.person-3 { background: var(--person-3); }
+.timeline-legend .swatch.person-4 { background: var(--person-4); }
+.timeline-legend .swatch.person-5 { background: var(--person-5); }
 
 .timeline-legend .swatch.free {
   background: var(--tl-free);
