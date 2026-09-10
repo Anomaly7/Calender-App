@@ -1,9 +1,52 @@
 import { useState } from "react";
 
+// fetch() has no upload-progress event, so XHR is used here to show real
+// upload progress, then an indeterminate bar while Claude analyzes the
+// image (that part has no measurable progress to report).
+function uploadWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    // Fallback in case a progress event with 100% never fires (some
+    // networks/proxies only report progress coarsely) - the upload phase
+    // being over at all is what should move us into "analyzing".
+    xhr.upload.onloadend = () => onProgress(100);
+
+    xhr.onload = () => {
+      let data = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        // leave data as null; handled below
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+      } else {
+        reject(new Error(data?.detail || `Import failed (${xhr.status})`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+
+    xhr.send(formData);
+  });
+}
+
 export default function ImportScreenshot({ onImported }) {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState("idle"); // idle | uploading | analyzing
+  const [progress, setProgress] = useState(0);
+
+  const loading = phase !== "idle";
 
   async function upload() {
     const userId = localStorage.getItem("userId");
@@ -13,25 +56,24 @@ export default function ImportScreenshot({ onImported }) {
     }
     if (!file) return;
 
-    setLoading(true);
+    setPhase("uploading");
+    setProgress(0);
     setStatus("");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(
+      const data = await uploadWithProgress(
         `https://calender-app-mm4q.onrender.com/import/screenshot?user_id=${userId}`,
-        { method: "POST", body: formData }
+        formData,
+        (pct) => {
+          setProgress(pct);
+          if (pct >= 100) setPhase("analyzing");
+        }
       );
 
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.detail || "Import failed");
-      }
-
-      if (data.imported === 0) {
+      if (!data || data.imported === 0) {
         setStatus("Didn't find any recognizable schedule in that image - try a clearer screenshot.");
       } else {
         const names = [...new Set((data.parsed || []).map((e) => e.title).filter(Boolean))];
@@ -46,7 +88,7 @@ export default function ImportScreenshot({ onImported }) {
       console.error(err);
       setStatus(err.message || "Something went wrong reading that screenshot.");
     } finally {
-      setLoading(false);
+      setPhase("idle");
     }
   }
 
@@ -68,9 +110,20 @@ export default function ImportScreenshot({ onImported }) {
         />
         <button className="btn btn-primary" onClick={upload} disabled={!file || loading}>
           {loading && <span className="spinner" />}
-          {loading ? "Reading..." : "Import"}
+          {phase === "uploading" && "Uploading..."}
+          {phase === "analyzing" && "Analyzing..."}
+          {phase === "idle" && "Import"}
         </button>
       </div>
+
+      {loading && (
+        <div className="progress-track">
+          <div
+            className={`progress-fill ${phase === "analyzing" ? "indeterminate" : ""}`}
+            style={phase === "uploading" ? { width: `${progress}%` } : undefined}
+          />
+        </div>
+      )}
 
       {status && <p className="empty-state">{status}</p>}
     </div>
