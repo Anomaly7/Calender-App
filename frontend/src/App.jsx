@@ -6,6 +6,7 @@ import GoogleConnect from "./components/GoogleConnect";
 import CalendarView from "./components/CalendarView";
 import SettingsPanel from "./components/SettingsPanel";
 import ImportIcs from "./components/ImportIcs";
+import ImportScreenshot from "./components/ImportScreenshot";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -213,6 +214,8 @@ export default function App() {
       <GoogleConnect connected={!!email} />
 
       <ImportIcs onImported={fetchAvailability} />
+
+      <ImportScreenshot onImported={fetchAvailability} />
 
       <AvailabilityForm
         manualBusy={manualBusy}
