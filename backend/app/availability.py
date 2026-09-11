@@ -74,16 +74,34 @@ def find_free_time(
 
     merged = merge_intervals(day_busy)
 
+    # Rather than returning the whole open gap (which could be hours long),
+    # carve out a single min_minutes-long candidate meeting time from each
+    # gap, positioned as close to the day's midpoint as that gap allows -
+    # this is what actually gets proposed/ranked, not just "you're free
+    # from 1pm to 4pm."
+    day_mid = start_dt + (end_dt - start_dt) / 2
+    ideal_start = day_mid - min_duration / 2
+
+    def best_window(gap_start, gap_end):
+        if gap_end - gap_start < min_duration:
+            return None
+        latest_start = gap_end - min_duration
+        window_start = min(max(ideal_start, gap_start), latest_start)
+        return (window_start, window_start + min_duration)
+
     current = start_dt
 
     for start, end in merged:
         if start > current:
-            if start - current >= min_duration:
-                free.append((current, start))
+            window = best_window(current, start)
+            if window:
+                free.append(window)
         current = max(current, end)
 
-    if current < end_dt and end_dt - current >= min_duration:
-        free.append((current, end_dt))
+    if current < end_dt:
+        window = best_window(current, end_dt)
+        if window:
+            free.append(window)
 
     return free
 
