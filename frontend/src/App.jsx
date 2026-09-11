@@ -39,12 +39,27 @@ export default function App() {
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("user");
   const groupIdFromLink = params.get("group");
+  const tokenFromUrl = params.get("token");
+
+  // The session token proves who's making a request - the backend never
+  // trusts a plain user_id from a query param for that (anyone could type
+  // in someone else's email and read/overwrite their schedule otherwise).
+  function authHeaders() {
+    const token = tokenFromUrl || localStorage.getItem("authToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
 
   useEffect(() => {
     if (userId) {
       localStorage.setItem("userId", userId);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (tokenFromUrl) {
+      localStorage.setItem("authToken", tokenFromUrl);
+    }
+  }, [tokenFromUrl]);
 
   useEffect(() => {
     if (groupIdFromLink) {
@@ -54,19 +69,19 @@ export default function App() {
 
   useEffect(() => {
     // Google's OAuth redirect drops the ?group= param, so by the time we
-    // learn the userId (from the redirect) the group id may only be in
+    // learn the token (from the redirect) the group id may only be in
     // localStorage, not the URL. Check both so the join actually happens
     // regardless of which one arrives first.
-    const joiningUserId = userId || localStorage.getItem("userId");
     const joiningGroupId = groupIdFromLink || localStorage.getItem("groupId");
+    const token = tokenFromUrl || localStorage.getItem("authToken");
 
-    if (!joiningUserId || !joiningGroupId) return;
+    if (!token || !joiningGroupId) return;
 
     fetch(
-      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${joiningGroupId}&user_id=${joiningUserId}`,
-      { method: "POST" }
+      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${joiningGroupId}`,
+      { method: "POST", headers: authHeaders() }
     );
-  }, [groupIdFromLink, userId]);
+  }, [groupIdFromLink, tokenFromUrl]);
 
   // 🔹 FREE TIMES
   const [freeTimes, setFreeTimes] = useState(() => {
@@ -75,12 +90,13 @@ export default function App() {
   });
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    const token = tokenFromUrl || localStorage.getItem("authToken");
+    if (!token) return;
 
-    fetch(`https://calender-app-mm4q.onrender.com/auth/me?user=${userId}`)
+    fetch(`https://calender-app-mm4q.onrender.com/auth/me`, { headers: authHeaders() })
       .then(res => res.json())
       .then(data => setEmail(data.email));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Busy/free times are scoped server-side, so cached results from a
@@ -117,8 +133,8 @@ export default function App() {
   }, [settings]);
 
   async function fetchAvailability(extraBusy = []) {
-    const userId = localStorage.getItem("userId");
-    if (!userId) return;
+    const token = tokenFromUrl || localStorage.getItem("authToken");
+    if (!token) return;
 
     const groupId = localStorage.getItem("groupId");
     const groupParam = groupId ? `&group=${groupId}` : "";
@@ -129,10 +145,10 @@ export default function App() {
     const startOffset = -new Date().getDay();
 
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?user_id=${userId}${groupParam}&min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}${groupParam}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(extraBusy.length ? [extraBusy] : []),
       }
     );
@@ -152,6 +168,7 @@ export default function App() {
     setBusyTimes([]);
     setFreeTimes([]);
     localStorage.removeItem("userId");
+    localStorage.removeItem("authToken");
     localStorage.removeItem("groupId");
     localStorage.removeItem("manualBusy");
     localStorage.removeItem("busyTimes");
@@ -159,10 +176,9 @@ export default function App() {
 
   }
   function logout() {
-    const userId = localStorage.getItem("userId");
-
-    fetch(`https://calender-app-mm4q.onrender.com/auth/logout?user=${userId}`, {
-      method: "POST"
+    fetch(`https://calender-app-mm4q.onrender.com/auth/logout`, {
+      method: "POST",
+      headers: authHeaders()
     }).then(() => {
       localStorage.clear();
       setEmail(null);
@@ -183,11 +199,10 @@ export default function App() {
 
   function createGroupLink() {
     const groupId = generateShortGroupId();
-    const userId = localStorage.getItem("userId");
 
     fetch(
-      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${groupId}&user_id=${userId}`,
-      { method: "POST" }
+      `https://calender-app-mm4q.onrender.com/groups/join?group_id=${groupId}`,
+      { method: "POST", headers: authHeaders() }
     );
 
     localStorage.setItem("groupId", groupId);

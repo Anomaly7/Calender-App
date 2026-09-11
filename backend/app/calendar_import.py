@@ -3,8 +3,9 @@ from zoneinfo import ZoneInfo
 
 import icalendar
 import recurring_ical_events
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.auth_utils import get_current_user
 from app.db import conn
 
 router = APIRouter()
@@ -12,7 +13,7 @@ PST = ZoneInfo("America/Los_Angeles")
 
 
 @router.post("/import/ics")
-async def import_ics(user_id: str = Query(...), file: UploadFile = File(...)):
+async def import_ics(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     content = await file.read()
 
     try:
