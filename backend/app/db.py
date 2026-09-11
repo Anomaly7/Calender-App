@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """)
 
+# CREATE TABLE IF NOT EXISTS above won't retrofit a new column onto a
+# users table that already exists in production.
+existing_user_columns = {row[0] for row in conn.execute(
+    "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+).fetchall()}
+if "password_hash" not in existing_user_columns:
+    conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+
 conn.execute("""
 CREATE TABLE IF NOT EXISTS busy_times (
     id SERIAL PRIMARY KEY,

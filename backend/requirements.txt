@@ -9,4 +9,5 @@ google-auth-oauthlib
 google-api-python-client
 icalendar
 recurring-ical-events
+bcrypt
 tzdata; sys_platform == "win32"

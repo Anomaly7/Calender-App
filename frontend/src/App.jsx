@@ -3,6 +3,7 @@ import "./App.css";
 
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
+import EmailAuth from "./components/EmailAuth";
 import CalendarView from "./components/CalendarView";
 import MonthView from "./components/MonthView";
 import SettingsPanel from "./components/SettingsPanel";
@@ -351,10 +352,23 @@ export default function App() {
         <div className="login-card">
           <h2>Sign in to continue</h2>
           <p className="card-subtitle">
-            TimeFrame requires a Google sign-in so only you can see and manage your own
-            schedule.
+            Sign in so only you can see and manage your own schedule.
           </p>
           <GoogleConnect connected={false} />
+
+          <div className="auth-divider"><span>or</span></div>
+
+          <EmailAuth
+            onAuthenticated={(token, authedEmail) => {
+              localStorage.setItem("authToken", token);
+              localStorage.setItem("userId", authedEmail);
+              // A full reload (not just setEmail) so the mount-time
+              // fetchAvailability effect actually runs - the same thing
+              // a Google sign-in redirect naturally does by reloading
+              // the page.
+              window.location.reload();
+            }}
+          />
         </div>
       </div>
     );
