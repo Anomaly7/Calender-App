@@ -2,7 +2,6 @@
 
 **Live Demo:**  
 👉 https://calender-app-one-xi.vercel.app
-Google connection wont work for unauthorized email accounts (message me for access)
 ---
 
 ## Overview
