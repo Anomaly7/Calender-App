@@ -1,7 +1,8 @@
 from zoneinfo import ZoneInfo
-from fastapi import APIRouter, Body, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request
 from datetime import datetime, time, timedelta
 from app.availability import merge_intervals, find_free_time, score_slot
+from app.auth_utils import get_current_user
 from app.db import conn
 
 router = APIRouter()
@@ -10,8 +11,8 @@ PST = ZoneInfo("America/Los_Angeles")
 @router.post("/availability/merge")
 def merge_users_availability(
     request: Request,
-    user_id: str = Query(...),
     users_busy: list = Body(...),
+    user_id: str = Depends(get_current_user),
     min_minutes: int = Query(30),
     day_start: str = Query("08:00"),
     day_end: str = Query("22:00"),
@@ -177,7 +178,7 @@ def merge_users_availability(
     }
 
 @router.post("/groups/join")
-def join_group(group_id: str = Query(...), user_id: str = Query(...)):
+def join_group(group_id: str = Query(...), user_id: str = Depends(get_current_user)):
     conn.execute(
         "INSERT INTO groups (id) VALUES (?) ON CONFLICT (id) DO NOTHING",
         (group_id,)

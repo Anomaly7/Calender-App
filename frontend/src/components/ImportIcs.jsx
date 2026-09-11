@@ -6,8 +6,8 @@ export default function ImportIcs({ onImported }) {
   const [loading, setLoading] = useState(false);
 
   async function upload() {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
       setStatus("Connect Google Calendar or sign in first.");
       return;
     }
@@ -21,8 +21,8 @@ export default function ImportIcs({ onImported }) {
       formData.append("file", file);
 
       const res = await fetch(
-        `https://calender-app-mm4q.onrender.com/import/ics?user_id=${userId}`,
-        { method: "POST", body: formData }
+        `https://calender-app-mm4q.onrender.com/import/ics`,
+        { method: "POST", body: formData, headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.ok) {

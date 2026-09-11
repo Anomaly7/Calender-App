@@ -1,11 +1,13 @@
 import os
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-from fastapi import APIRouter, Request
+from urllib.parse import quote
+from fastapi import APIRouter, Depends, Request
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from starlette.responses import RedirectResponse
 from app.availability import parse_event, find_free_time, PST
+from app.auth_utils import create_session_token, get_current_user
 from datetime import datetime, time, timedelta
 from app.db import conn
 
@@ -106,14 +108,11 @@ def callback(request: Request):
     conn.commit()
 
 
-    return RedirectResponse(f"https://calender-app-one-xi.vercel.app/?user={user_id}")
+    token = create_session_token(user_id)
+    return RedirectResponse(f"https://calender-app-one-xi.vercel.app/?user={quote(user_id)}&token={quote(token)}")
 
 @router.get("/auth/status")
-def google_status(request: Request):
-    user_id = request.query_params.get("user")
-    if not user_id:
-        return {"connected": False}
-
+def google_status(user_id: str = Depends(get_current_user)):
     row = conn.execute(
         "SELECT 1 FROM busy_times WHERE user_id = ? AND source = 'google' LIMIT 1",
         (user_id,)
@@ -122,11 +121,7 @@ def google_status(request: Request):
     return {"connected": row is not None}
 
 @router.post("/auth/disconnect")
-def disconnect_google(request: Request):
-    user_id = request.query_params.get("user")
-    if not user_id:
-        return {"disconnected": True}
-
+def disconnect_google(user_id: str = Depends(get_current_user)):
     conn.execute(
         "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
         (user_id,)
@@ -136,11 +131,7 @@ def disconnect_google(request: Request):
     return {"disconnected": True}
 
 @router.get("/auth/me")
-def me(request: Request):
-    user_id = request.query_params.get("user")
-    if not user_id:
-        return {"email": None}
-
+def me(user_id: str = Depends(get_current_user)):
     row = conn.execute(
         "SELECT email FROM users WHERE id = ?",
         (user_id,)
@@ -149,11 +140,7 @@ def me(request: Request):
     return {"email": row[0] if row else None}
 
 @router.post("/auth/logout")
-def logout(request: Request):
-    user_id = request.query_params.get("user")
-    if not user_id:
-        return {"logged_out": True}
-
+def logout(user_id: str = Depends(get_current_user)):
     conn.execute(
         "DELETE FROM busy_times WHERE user_id = ? AND source = 'google'",
         (user_id,)
