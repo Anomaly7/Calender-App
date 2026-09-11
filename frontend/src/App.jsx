@@ -182,7 +182,15 @@ export default function App() {
     fetch(
       `https://calender-app-mm4q.onrender.com/groups/join?group_id=${joiningGroupId}`,
       { method: "POST", headers: authHeaders() }
-    );
+    ).then(() => {
+      // The mount-time availability fetch (below) can win the race and
+      // complete before this join is processed server-side, showing only
+      // your own calendar with no automatic retry - refetch once the
+      // join has actually gone through so the group's merged data shows
+      // up without needing to touch anything else first.
+      fetchAvailability(manualBusy).catch((err) => console.error(err));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupIdFromLink, tokenFromUrl]);
 
   // 🔹 FREE TIMES
