@@ -173,8 +173,16 @@ export default function App() {
     });
   }
 
+  // Short, easy-to-share/type code instead of a full UUID - collisions are
+  // astronomically unlikely at this app's scale (58^8 possibilities).
+  function generateShortGroupId() {
+    const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+  }
+
   function createGroupLink() {
-    const groupId = crypto.randomUUID();
+    const groupId = generateShortGroupId();
     const userId = localStorage.getItem("userId");
 
     fetch(
