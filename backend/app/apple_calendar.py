@@ -30,10 +30,10 @@ def _sync_apple_calendar(user_id, apple_email, app_password):
         client = caldav.DAVClient(url=ICLOUD_CALDAV_URL, username=apple_email, password=app_password)
         principal = client.principal()
         calendars = principal.calendars()
-    except Exception:
+    except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="Couldn't sign in to iCloud with that Apple ID and app-specific password."
+            detail=f"Couldn't sign in to iCloud: {type(e).__name__}: {e}"
         )
 
     today = datetime.now(PST).date()
