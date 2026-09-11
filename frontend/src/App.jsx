@@ -11,7 +11,7 @@ import ImportIcs from "./components/ImportIcs";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const DEFAULT_SETTINGS = { dayStart: "08:00", dayEnd: "22:00", excludeWeekends: false };
+const DEFAULT_SETTINGS = { dayStart: "08:00", dayEnd: "22:00", excludeWeekends: false, meetingLength: 30 };
 
 function ymd(date) {
   const y = date.getFullYear();
@@ -224,7 +224,7 @@ export default function App() {
       fetchAvailability(manualBusy).catch(err => console.error(err));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.dayStart, settings.dayEnd, viewMode, viewDate]);
+  }, [settings.dayStart, settings.dayEnd, settings.meetingLength, viewMode, viewDate]);
 
   // 🔁 Persist everything
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function App() {
     const { startOffset, days } = getRequestRange(viewMode, viewDate);
 
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=${days}&start_offset=${startOffset}${groupParam}`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=${settings.meetingLength}&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=${days}&start_offset=${startOffset}${groupParam}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },

@@ -52,7 +52,8 @@ export default function MonthView({
         return dow !== 0 && dow !== 6;
       })
     : freeTimes;
-  const best = eligibleFreeTimes[0];
+  const topFree = eligibleFreeTimes.slice(0, 3);
+  const rankMarker = ["👑", "2", "3"];
 
   const owners = [...new Set(busyTimes.map((b) => b.owner).filter(Boolean))];
   const personColorByOwner = assignPersonColors(owners, currentUserId);
@@ -76,7 +77,7 @@ export default function MonthView({
         {days.map((date) => {
           const inMonth = parseISODate(date).getMonth() === monthIndex;
           const isToday = date === today;
-          const isBestDay = best && best.date === date;
+          const rankOnDay = topFree.findIndex((f) => f.date === date) + 1; // 0 = not in top 3
           const dayBusy = (busyByDate[date] || []).slice().sort((a, b) => a.start.localeCompare(b.start));
           const visible = dayBusy.slice(0, 3);
           const overflow = dayBusy.length - visible.length;
@@ -92,8 +93,13 @@ export default function MonthView({
                 {Number(date.split("-")[2])}
               </span>
 
-              {isBestDay && (
-                <span className="month-best-marker" title="Best free slot this month">★</span>
+              {rankOnDay > 0 && (
+                <span
+                  className={`month-best-marker rank-${rankOnDay}`}
+                  title={rankOnDay === 1 ? "Best free slot this month" : `${rankOnDay === 2 ? "2nd" : "3rd"} best free slot this month`}
+                >
+                  {rankMarker[rankOnDay - 1]}
+                </span>
               )}
 
               <div className="month-cell-events">
@@ -119,7 +125,7 @@ export default function MonthView({
             {owner === currentUserId ? "You" : owner.split("@")[0]}
           </span>
         ))}
-        <span><span className="swatch best-free" /> Best free slot</span>
+        <span>👑 = best free slot that day, ② / ③ = runner-up</span>
       </div>
     </div>
   );

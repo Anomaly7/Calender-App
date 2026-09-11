@@ -87,17 +87,26 @@ def find_free_time(
 
     return free
 
-def score_slot(start: datetime, end: datetime) -> int:
+def score_slot(start: datetime, end: datetime, day_start: time, day_end: time, day_busy_count: int = 0) -> int:
     duration_minutes = int((end - start).total_seconds() / 60)
 
-    score = duration_minutes
-    hour = start.hour
+    # A slot centered near the middle of the day's bounds scores highest,
+    # falling off linearly toward either edge - replaces the old fixed
+    # "10am-6pm is good" hour buckets with something that adapts to
+    # whatever day_start/day_end the viewer has configured.
+    day_start_minutes = day_start.hour * 60 + day_start.minute
+    day_end_minutes = day_end.hour * 60 + day_end.minute
+    day_mid_minutes = (day_start_minutes + day_end_minutes) / 2
 
-    if 10 <= hour <= 18:
-        score += 100
-    elif 8 <= hour < 10 or 18 < hour <= 21:
-        score += 40
-    else:
-        score -= 50
+    slot_mid_minutes = ((start.hour * 60 + start.minute) + (end.hour * 60 + end.minute)) / 2
 
-    return score
+    half_day_span = max(day_end_minutes - day_start_minutes, 1) / 2
+    distance_from_mid = abs(slot_mid_minutes - day_mid_minutes)
+    centeredness = max(0.0, 150 * (1 - distance_from_mid / half_day_span))
+
+    # Between otherwise-similar slots, prefer the quieter day - e.g. a
+    # meeting right after class on a 2-class day beats the same slot
+    # shape on a 3-class day.
+    quietness_penalty = day_busy_count * 15
+
+    return round(duration_minutes + centeredness - quietness_penalty)

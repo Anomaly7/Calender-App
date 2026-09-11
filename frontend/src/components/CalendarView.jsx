@@ -189,7 +189,8 @@ export default function CalendarView({
   const nowMin = wallClockMinutes(now.toISOString(), timezone, dayStartHour);
   const showNowLine = nowMin >= 0 && nowMin <= totalMinutes;
 
-  const best = eligibleFreeTimes[0];
+  const topFree = eligibleFreeTimes.slice(0, 3);
+  const rankLabel = ["👑 Best free slot", "2nd best free slot", "3rd best free slot"];
   const showHeaders = mode === "week";
 
   const owners = [...new Set(busyTimes.map((b) => b.owner).filter(Boolean))];
@@ -249,11 +250,11 @@ export default function CalendarView({
 
               const busyLaned = assignLanes(dayBusy);
 
-              // Free time is just the absence of a block - only the single
-              // best-ranked slot (wherever it falls) gets highlighted.
+              // Free time is just the absence of a block - only the top 3
+              // ranked slots (wherever they fall) get highlighted.
               const dayFree = freeTimes
-                .filter((f) => f.date === date && f === best)
-                .map((f) => ({ ...f, ...toSpan(f.start, f.end) }))
+                .filter((f) => f.date === date && topFree.includes(f))
+                .map((f) => ({ ...f, ...toSpan(f.start, f.end), rank: topFree.indexOf(f) + 1 }))
                 .filter((f) => f.endMin > 0 && f.startMin < totalMinutes);
 
               return (
@@ -269,18 +270,18 @@ export default function CalendarView({
                   {dayFree.map((f, i) => (
                     <div
                       key={`free-${i}`}
-                      className="timeline-block best-free"
+                      className={`timeline-block best-free rank-${f.rank}`}
                       style={{
                         top: `${(f.startMin / totalMinutes) * totalHeight}px`,
                         height: `${Math.max(4, ((f.endMin - f.startMin) / totalMinutes) * totalHeight)}px`
                       }}
-                      title={`Best free slot · ${f.duration_minutes} min`}
+                      title={`${rankLabel[f.rank - 1]} · ${f.duration_minutes} min`}
                     >
                       <div className="block-content">
                         <span className="block-time">
                           {formatBlockTime(f.start, timezone)} – {formatBlockTime(f.end, timezone)}
                         </span>
-                        <span className="block-sub">Best free slot</span>
+                        <span className="block-sub">{rankLabel[f.rank - 1]}</span>
                       </div>
                     </div>
                   ))}
@@ -342,7 +343,8 @@ export default function CalendarView({
             {owner === currentUserId ? "You" : ownerLabel(owner, null)}
           </span>
         ))}
-        <span><span className="swatch best-free" /> Best free slot</span>
+        <span><span className="swatch best-free rank-1" /> 👑 Best free slot</span>
+        <span><span className="swatch best-free rank-2" /> 2nd/3rd best</span>
       </div>
     </div>
   );
