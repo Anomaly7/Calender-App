@@ -70,7 +70,7 @@ def callback(request: Request):
 
 
     conn.execute(
-        "INSERT OR IGNORE INTO users (id, email) VALUES (?, ?)",
+        "INSERT INTO users (id, email) VALUES (?, ?) ON CONFLICT (id) DO NOTHING",
         (user_id, email)
     )
     conn.commit()
@@ -99,7 +99,7 @@ def callback(request: Request):
 
     for start, end, raw_timezone, title in busy:
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO busy_times (user_id, start, end_time, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, start.isoformat(), end.isoformat(), "google", raw_timezone, title)
         )
 

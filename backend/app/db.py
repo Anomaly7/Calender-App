@@ -1,6 +1,34 @@
-import sqlite3
+import os
 
-conn = sqlite3.connect("calendar.db", check_same_thread=False)
+import psycopg2
+from dotenv import load_dotenv
+
+# Loaded here (not just in main.py) since this module connects to the
+# database at import time, which can happen before main.py's own
+# load_dotenv() call runs.
+load_dotenv()
+
+_raw_conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+
+
+class _Connection:
+    """Wraps a psycopg2 connection so the rest of the app can keep using
+    the sqlite3-style conn.execute(sql, params) / conn.commit() calling
+    convention it was written against."""
+
+    def __init__(self, raw):
+        self._raw = raw
+
+    def execute(self, sql, params=()):
+        cur = self._raw.cursor()
+        cur.execute(sql.replace("?", "%s"), params)
+        return cur
+
+    def commit(self):
+        self._raw.commit()
+
+
+conn = _Connection(_raw_conn)
 
 conn.execute("""
 CREATE TABLE IF NOT EXISTS users (
@@ -11,23 +39,15 @@ CREATE TABLE IF NOT EXISTS users (
 
 conn.execute("""
 CREATE TABLE IF NOT EXISTS busy_times (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id TEXT,
     start TEXT,
-    end TEXT,
-    source TEXT
+    end_time TEXT,
+    source TEXT,
+    raw_timezone TEXT,
+    title TEXT
 )
 """)
-
-# CREATE TABLE IF NOT EXISTS above won't retrofit new columns onto a
-# database that already exists (e.g. in production), so add them explicitly.
-existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(busy_times)").fetchall()}
-if "raw_timezone" not in existing_columns:
-    conn.execute("ALTER TABLE busy_times ADD COLUMN raw_timezone TEXT")
-if "title" not in existing_columns:
-    conn.execute("ALTER TABLE busy_times ADD COLUMN title TEXT")
-
-conn.commit()
 
 conn.execute("""
 CREATE TABLE IF NOT EXISTS groups (

@@ -52,7 +52,7 @@ async def import_ics(user_id: str = Query(...), file: UploadFile = File(...)):
             end_dt = raw_end.astimezone(PST) if raw_end.tzinfo else raw_end.replace(tzinfo=PST)
 
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO busy_times (user_id, start, end_time, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, start_dt.isoformat(), end_dt.isoformat(), "ics", str(PST), title)
         )
         imported += 1
