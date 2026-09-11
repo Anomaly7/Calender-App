@@ -163,8 +163,11 @@ export default function App() {
     }
   }, [tokenFromUrl]);
 
+  console.log("[DEBUG render] URL search:", window.location.search, "| groupIdFromLink:", groupIdFromLink, "| tokenFromUrl present:", !!tokenFromUrl);
+
   useEffect(() => {
     if (groupIdFromLink) {
+      console.log("[DEBUG] persisting groupId to localStorage:", groupIdFromLink);
       localStorage.setItem("groupId", groupIdFromLink);
     }
   }, [groupIdFromLink]);
@@ -177,12 +180,20 @@ export default function App() {
     const joiningGroupId = groupIdFromLink || localStorage.getItem("groupId");
     const token = tokenFromUrl || localStorage.getItem("authToken");
 
-    if (!token || !joiningGroupId) return;
+    console.log("[DEBUG join-effect] groupIdFromLink:", groupIdFromLink, "| localStorage groupId:", localStorage.getItem("groupId"), "| resolved joiningGroupId:", joiningGroupId, "| have token:", !!token);
+
+    if (!token || !joiningGroupId) {
+      console.log("[DEBUG join-effect] skipping join - missing token or groupId");
+      return;
+    }
+
+    console.log("[DEBUG join-effect] calling /groups/join with group_id =", joiningGroupId);
 
     fetch(
       `https://calender-app-mm4q.onrender.com/groups/join?group_id=${joiningGroupId}`,
       { method: "POST", headers: authHeaders() }
-    ).then(() => {
+    ).then((res) => {
+      console.log("[DEBUG join-effect] /groups/join responded with status", res.status, "- now refetching availability");
       // The mount-time availability fetch (below) can win the race and
       // complete before this join is processed server-side, showing only
       // your own calendar with no automatic retry - refetch once the
@@ -257,27 +268,32 @@ export default function App() {
 
   async function fetchAvailability(extraBusy = []) {
     const token = tokenFromUrl || localStorage.getItem("authToken");
-    if (!token) return;
+    if (!token) {
+      console.log("[DEBUG fetchAvailability] no token, skipping fetch entirely");
+      return;
+    }
 
     const groupId = localStorage.getItem("groupId");
     const groupParam = groupId ? `&group=${groupId}` : "";
 
     const { startOffset, days } = getRequestRange(viewMode, viewDate);
 
-    const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=${settings.meetingLength}&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=${days}&start_offset=${startOffset}${groupParam}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify(extraBusy.length ? [extraBusy] : []),
-      }
-    );
+    const url = `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=${settings.meetingLength}&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=${days}&start_offset=${startOffset}${groupParam}`;
+    console.log("[DEBUG fetchAvailability] localStorage groupId:", groupId, "| full URL:", url);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(extraBusy.length ? [extraBusy] : []),
+    });
 
     if (!res.ok) {
+      console.log("[DEBUG fetchAvailability] request failed with status", res.status);
       throw new Error("Failed to fetch availability");
     }
 
     const data = await res.json();
+    console.log("[DEBUG fetchAvailability] got", data.busy_times.length, "busy_times, owners:", [...new Set(data.busy_times.map(b => b.owner))]);
     setBusyTimes(data.busy_times);
     setFreeTimes(data.ranked_free_time);
   }
