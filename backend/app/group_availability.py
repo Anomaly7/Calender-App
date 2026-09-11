@@ -152,6 +152,8 @@ def merge_users_availability(
     results = []
 
     for target_date in sorted(date_range):
+        day_busy_count = sum(1 for s, e in merged_busy if s.date() == target_date)
+
         free_slots = find_free_time(
             merged_busy,
             target_date=target_date,
@@ -167,7 +169,7 @@ def merge_users_availability(
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "duration_minutes": int((end - start).total_seconds() / 60),
-                "score": score_slot(start, end)
+                "score": score_slot(start, end, day_start_time, day_end_time, day_busy_count)
             })
 
     results.sort(key=lambda x: x["score"], reverse=True)

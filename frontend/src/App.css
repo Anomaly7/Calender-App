@@ -551,6 +551,23 @@
   font-size: 0.75rem;
 }
 
+.month-best-marker.rank-1 {
+  font-size: 0.9rem;
+}
+
+.month-best-marker.rank-2,
+.month-best-marker.rank-3 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--tl-best-bg);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
 .month-cell-events {
   display: flex;
   flex-direction: column;
@@ -733,6 +750,11 @@
   z-index: 0;
 }
 
+.timeline-block.best-free.rank-2,
+.timeline-block.best-free.rank-3 {
+  opacity: 0.75;
+}
+
 .timeline-now-line {
   position: absolute;
   left: 0;
@@ -780,4 +802,8 @@
 
 .timeline-legend .swatch.best-free {
   background: var(--tl-best);
+}
+
+.timeline-legend .swatch.best-free.rank-2 {
+  opacity: 0.75;
 }
