@@ -77,7 +77,7 @@ def merge_users_availability(
 
     for start_dt, end_dt, title in manual_blocks:
         conn.execute(
-            "INSERT INTO busy_times (user_id, start, end, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO busy_times (user_id, start, end_time, source, raw_timezone, title) VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, start_dt.isoformat(), end_dt.isoformat(), "manual", str(viewer_tz), title)
         )
 
@@ -108,7 +108,7 @@ def merge_users_availability(
 
     for uid in member_ids:
         rows = conn.execute(
-            "SELECT start, end, source, raw_timezone, title FROM busy_times WHERE user_id = ?",
+            "SELECT start, end_time, source, raw_timezone, title FROM busy_times WHERE user_id = ?",
             (uid,)
         ).fetchall()
 
@@ -179,7 +179,7 @@ def merge_users_availability(
 @router.post("/groups/join")
 def join_group(group_id: str = Query(...), user_id: str = Query(...)):
     conn.execute(
-        "INSERT OR IGNORE INTO groups (id) VALUES (?)",
+        "INSERT INTO groups (id) VALUES (?) ON CONFLICT (id) DO NOTHING",
         (group_id,)
     )
 
