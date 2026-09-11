@@ -94,7 +94,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [email, setEmail] = useState(null);
+  // undefined = still checking for a valid session, null = confirmed signed
+  // out, a string = confirmed signed in as that email. Kept 3-way so the
+  // login gate below never flashes before a valid returning session has
+  // had a chance to verify itself.
+  const [email, setEmail] = useState(undefined);
 
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem("viewMode") || "day";
@@ -188,11 +192,24 @@ export default function App() {
 
   useEffect(() => {
     const token = tokenFromUrl || localStorage.getItem("authToken");
-    if (!token) return;
+    if (!token) {
+      setEmail(null);
+      return;
+    }
 
     fetch(`https://calender-app-mm4q.onrender.com/auth/me`, { headers: authHeaders() })
-      .then(res => res.json())
-      .then(data => setEmail(data.email));
+      .then(res => {
+        if (!res.ok) throw new Error("Session invalid");
+        return res.json();
+      })
+      .then(data => setEmail(data.email))
+      .catch(() => {
+        // An expired/invalid token shouldn't leave the app stuck showing
+        // stale data behind the gate - drop it and fall back to signed out.
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userId");
+        setEmail(null);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -313,6 +330,36 @@ export default function App() {
   }
 
 
+  // Still verifying a returning session - render nothing rather than
+  // flashing the login gate for a split second before it resolves.
+  if (email === undefined) {
+    return <div className="app" />;
+  }
+
+  // No valid session - the rest of the app (and the data it would show)
+  // stays completely hidden until Google sign-in succeeds.
+  if (email === null) {
+    return (
+      <div className="app login-gate">
+        <header className="app-header">
+          <div className="brand">
+            <span className="brand-mark">🗓️</span>
+            <h1>TimeFrame</h1>
+          </div>
+        </header>
+
+        <div className="login-card">
+          <h2>Sign in to continue</h2>
+          <p className="card-subtitle">
+            TimeFrame requires a Google sign-in so only you can see and manage your own
+            schedule.
+          </p>
+          <GoogleConnect connected={false} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -320,11 +367,9 @@ export default function App() {
           <span className="brand-mark">🗓️</span>
           <h1>TimeFrame</h1>
         </div>
-        {email && (
-          <div className="user-chip">
-            Signed in as <strong>{email}</strong>
-          </div>
-        )}
+        <div className="user-chip">
+          Signed in as <strong>{email}</strong>
+        </div>
       </header>
 
       <GoogleConnect connected={!!email} />
