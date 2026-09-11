@@ -3,7 +3,6 @@ import "./App.css";
 
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
-import ConnectApple from "./components/ConnectApple";
 import CalendarView from "./components/CalendarView";
 import MonthView from "./components/MonthView";
 import SettingsPanel from "./components/SettingsPanel";
@@ -329,8 +328,6 @@ export default function App() {
       </header>
 
       <GoogleConnect connected={!!email} />
-
-      <ConnectApple authHeaders={authHeaders} onImported={fetchAvailability} />
 
       <ImportIcs onImported={fetchAvailability} />
 
