@@ -138,6 +138,7 @@ function assignPersonColors(owners, currentUserId) {
 
 export default function CalendarView({
   mode,
+  viewDate,
   busyTimes,
   freeTimes,
   timezone,
@@ -147,8 +148,9 @@ export default function CalendarView({
   dayEndHour = 22
 }) {
   const today = todayLocal();
-  const weekStart = addDays(today, -dayOfWeek(today));
-  let dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [today];
+  const anchor = viewDate || today;
+  const weekStart = addDays(anchor, -dayOfWeek(anchor));
+  let dates = mode === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [anchor];
 
   // Only trims weekend columns from the week grid - Day view should
   // always show today, even if today happens to be a Saturday/Sunday.

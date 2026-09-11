@@ -4,12 +4,88 @@ import "./App.css";
 import AvailabilityForm from "./components/AvailabilityForm";
 import GoogleConnect from "./components/GoogleConnect";
 import CalendarView from "./components/CalendarView";
+import MonthView from "./components/MonthView";
 import SettingsPanel from "./components/SettingsPanel";
 import ImportIcs from "./components/ImportIcs";
 
 const MY_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const DEFAULT_SETTINGS = { dayStart: "08:00", dayEnd: "22:00", excludeWeekends: false };
+
+function ymd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseISODate(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function addDaysISO(iso, n) {
+  const d = parseISODate(iso);
+  d.setDate(d.getDate() + n);
+  return ymd(d);
+}
+
+function addMonthsISO(iso, n) {
+  const d = parseISODate(iso);
+  d.setMonth(d.getMonth() + n);
+  return ymd(d);
+}
+
+// The date range to request from the backend for whichever period is
+// currently in view - Day/Week/Month all page independently through the
+// full year of synced data instead of always fetching "this week."
+function getRequestRange(viewMode, viewDate) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const vd = parseISODate(viewDate);
+
+  if (viewMode === "day") {
+    const startOffset = Math.round((vd - today) / 86400000);
+    return { startOffset, days: 1 };
+  }
+
+  if (viewMode === "week") {
+    const weekStart = new Date(vd);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const startOffset = Math.round((weekStart - today) / 86400000);
+    return { startOffset, days: 7 };
+  }
+
+  // month - always a fixed 6-week (42 day) grid so the request always
+  // covers every cell MonthView renders, including the leading/trailing
+  // days borrowed from adjacent months.
+  const monthStart = new Date(vd.getFullYear(), vd.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  const startOffset = Math.round((gridStart - today) / 86400000);
+  return { startOffset, days: 42 };
+}
+
+function formatRangeLabel(viewMode, viewDate) {
+  const d = parseISODate(viewDate);
+
+  if (viewMode === "day") {
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  }
+
+  if (viewMode === "week") {
+    const weekStart = new Date(d);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+    const startLabel = weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const endLabel = weekEnd.toLocaleDateString(undefined, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" });
+    return `${startLabel} – ${endLabel}, ${weekEnd.getFullYear()}`;
+  }
+
+  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
 
 export default function App() {
   // 🔹 MANUAL BUSY SLOTS (input form)
@@ -23,6 +99,27 @@ export default function App() {
   const [viewMode, setViewMode] = useState(() => {
     return localStorage.getItem("viewMode") || "day";
   });
+
+  // The anchor date for whichever period is in view - always starts on
+  // today on a fresh load rather than persisting, so reopening the app
+  // doesn't strand you on a date you navigated to last time.
+  const [viewDate, setViewDate] = useState(() => ymd(new Date()));
+
+  function goToPrevious() {
+    if (viewMode === "day") setViewDate((d) => addDaysISO(d, -1));
+    else if (viewMode === "week") setViewDate((d) => addDaysISO(d, -7));
+    else setViewDate((d) => addMonthsISO(d, -1));
+  }
+
+  function goToNext() {
+    if (viewMode === "day") setViewDate((d) => addDaysISO(d, 1));
+    else if (viewMode === "week") setViewDate((d) => addDaysISO(d, 7));
+    else setViewDate((d) => addMonthsISO(d, 1));
+  }
+
+  function goToToday() {
+    setViewDate(ymd(new Date()));
+  }
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState(() => {
@@ -109,7 +206,7 @@ export default function App() {
       fetchAvailability(manualBusy).catch(err => console.error(err));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.dayStart, settings.dayEnd]);
+  }, [settings.dayStart, settings.dayEnd, viewMode, viewDate]);
 
   // 🔁 Persist everything
   useEffect(() => {
@@ -139,13 +236,10 @@ export default function App() {
     const groupId = localStorage.getItem("groupId");
     const groupParam = groupId ? `&group=${groupId}` : "";
 
-    // Always fetch the whole current week (Sunday through Saturday) so
-    // switching between the Day and Week tabs is instant and doesn't need
-    // a fresh request - JS getDay() is already 0=Sunday.
-    const startOffset = -new Date().getDay();
+    const { startOffset, days } = getRequestRange(viewMode, viewDate);
 
     const res = await fetch(
-      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=7&start_offset=${startOffset}${groupParam}`,
+      `https://calender-app-mm4q.onrender.com/availability/merge?min_minutes=30&day_start=${settings.dayStart}&day_end=${settings.dayEnd}&timezone=${encodeURIComponent(MY_TIMEZONE)}&days=${days}&start_offset=${startOffset}${groupParam}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -268,6 +362,12 @@ export default function App() {
           Week
         </button>
         <button
+          className={`tab ${viewMode === "month" ? "active" : ""}`}
+          onClick={() => setViewMode("month")}
+        >
+          Month
+        </button>
+        <button
           className="settings-toggle"
           onClick={() => setSettingsOpen(!settingsOpen)}
           aria-label="Settings"
@@ -281,16 +381,38 @@ export default function App() {
         <SettingsPanel settings={settings} setSettings={setSettings} />
       )}
 
-      <CalendarView
-        mode={viewMode}
-        busyTimes={busyTimes}
-        freeTimes={freeTimes}
-        excludeWeekends={settings.excludeWeekends}
-        dayStartHour={parseInt(settings.dayStart.split(":")[0], 10)}
-        dayEndHour={parseInt(settings.dayEnd.split(":")[0], 10)}
-        timezone={MY_TIMEZONE}
-        currentUserId={localStorage.getItem("userId")}
-      />
+      <div className="calendar-nav">
+        <button className="btn-ghost" onClick={goToPrevious} aria-label="Previous">‹</button>
+        <button className="btn-ghost" onClick={goToToday}>Today</button>
+        <button className="btn-ghost" onClick={goToNext} aria-label="Next">›</button>
+        <span className="calendar-nav-label">{formatRangeLabel(viewMode, viewDate)}</span>
+      </div>
+
+      {viewMode === "month" ? (
+        <MonthView
+          viewDate={viewDate}
+          busyTimes={busyTimes}
+          freeTimes={freeTimes}
+          excludeWeekends={settings.excludeWeekends}
+          currentUserId={localStorage.getItem("userId")}
+          onSelectDay={(date) => {
+            setViewDate(date);
+            setViewMode("day");
+          }}
+        />
+      ) : (
+        <CalendarView
+          mode={viewMode}
+          viewDate={viewDate}
+          busyTimes={busyTimes}
+          freeTimes={freeTimes}
+          excludeWeekends={settings.excludeWeekends}
+          dayStartHour={parseInt(settings.dayStart.split(":")[0], 10)}
+          dayEndHour={parseInt(settings.dayEnd.split(":")[0], 10)}
+          timezone={MY_TIMEZONE}
+          currentUserId={localStorage.getItem("userId")}
+        />
+      )}
     </div>
   );
 }

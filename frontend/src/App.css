@@ -382,9 +382,120 @@
   color: var(--text-muted);
 }
 
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.calendar-nav .btn-ghost {
+  padding: 0.35em 0.7em;
+}
+
+.calendar-nav-label {
+  margin-left: 0.4rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
 .calendar {
   display: flex;
   gap: 0.5rem;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--grid-line);
+  gap: 1px;
+}
+
+.month-weekday-label {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.4rem 0;
+}
+
+.month-cell {
+  background: var(--surface);
+  border: none;
+  min-height: 5.5rem;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+.month-cell:hover {
+  background: var(--surface-muted);
+}
+
+.month-cell.outside-month {
+  opacity: 0.4;
+}
+
+.month-cell-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-cell-date.today-circle {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.month-best-marker {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  color: var(--tl-best);
+  font-size: 0.75rem;
+}
+
+.month-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+}
+
+.month-event-chip {
+  font-size: 0.65rem;
+  line-height: 1.3;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.month-event-chip.person-0 { background: var(--person-0-bg); color: var(--person-0); }
+.month-event-chip.person-1 { background: var(--person-1-bg); color: var(--person-1); }
+.month-event-chip.person-2 { background: var(--person-2-bg); color: var(--person-2); }
+.month-event-chip.person-3 { background: var(--person-3-bg); color: var(--person-3); }
+.month-event-chip.person-4 { background: var(--person-4-bg); color: var(--person-4); }
+.month-event-chip.person-5 { background: var(--person-5-bg); color: var(--person-5); }
+
+.month-event-more {
+  font-size: 0.65rem;
+  color: var(--text-muted);
 }
 
 .calendar-hours {

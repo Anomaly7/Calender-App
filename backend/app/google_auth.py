@@ -57,11 +57,12 @@ def callback(request: Request):
 
     service = build("calendar", "v3", credentials=credentials)
 
-    # Fetch a couple weeks out so the week view has real data beyond today,
-    # not just the current day.
+    # A full year out (plus a week back) so Month view has real data
+    # whenever the user navigates within the synced range, not just the
+    # current week.
     today = datetime.now(PST).date()
-    now = datetime.combine(today, time.min, tzinfo=PST).isoformat()
-    end = datetime.combine(today + timedelta(days=13), time.max, tzinfo=PST).isoformat()
+    now = datetime.combine(today - timedelta(days=7), time.min, tzinfo=PST).isoformat()
+    end = datetime.combine(today + timedelta(days=366), time.max, tzinfo=PST).isoformat()
 
     # Use calendar account email as user identity
     calendar = build("calendar", "v3", credentials=credentials)
@@ -77,19 +78,25 @@ def callback(request: Request):
     )
     conn.commit()
 
-    events_result = service.events().list(
-        calendarId="primary",
-        timeMin=now,
-        timeMax=end,
-        singleEvents=True,
-        orderBy="startTime"
-    ).execute()
-
-    events = events_result.get("items", [])
-    
-    print("RAW GOOGLE EVENTS:")
-    for e in events:
-        print(e.get("summary"), e.get("start"), e.get("end"))
+    # A year of (singleEvents-expanded) events can span many pages -
+    # Google caps each page at maxResults, so keep following nextPageToken
+    # until it's exhausted.
+    events = []
+    page_token = None
+    while True:
+        events_result = service.events().list(
+            calendarId="primary",
+            timeMin=now,
+            timeMax=end,
+            singleEvents=True,
+            orderBy="startTime",
+            maxResults=2500,
+            pageToken=page_token
+        ).execute()
+        events.extend(events_result.get("items", []))
+        page_token = events_result.get("nextPageToken")
+        if not page_token:
+            break
 
     busy = [parse_event(e) for e in events]
 
