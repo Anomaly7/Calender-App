@@ -62,12 +62,4 @@ CREATE TABLE IF NOT EXISTS group_members (
 )
 """)
 
-conn.execute("""
-CREATE TABLE IF NOT EXISTS apple_credentials (
-    user_id TEXT PRIMARY KEY,
-    apple_email TEXT,
-    encrypted_password TEXT
-)
-""")
-
 conn.commit()

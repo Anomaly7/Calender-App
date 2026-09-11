@@ -139,7 +139,6 @@ def merge_users_availability(
                 "label": {
                     "google": "(imported)",
                     "ics": "(ics)",
-                    "apple": "(apple)",
                 }.get(source, "(manual)"),
                 "title": title or None,
                 "owner": uid,
