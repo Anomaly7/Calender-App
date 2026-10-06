@@ -1,55 +1,66 @@
-# TimeFrame - Calendar Availability App 
+# TimeFrame - Calendar Availability App
 
-**Live Demo:**  
+**Live Demo:**
 👉 https://calender-app-one-xi.vercel.app
-Google connection wont work for unauthorized email accounts (message me for access)
+
+Google sign-in is restricted to pre-authorized test accounts while the app is in Google's unverified testing mode (message me for access). You don't need Google at all, though — **email/password sign-up works for anyone**.
+
 ---
 
 ## Overview
 
-The **Calendar Availability App** is a full-stack web application that helps users find the best available meeting times by combining multiple schedules.
+**TimeFrame** is a full-stack web application that helps users find the best available meeting times by combining multiple schedules.
 
-Users can connect their Google Calendar, add manual busy times, and instantly see **ranked free-time slots**. The app is designed to solve a real coordination problem in a clean, user-friendly way.
+Users sign in (Google or email/password), connect calendar sources, and instantly see **ranked free-time slots** — including a crowned "best" pick that favors times near the middle of the day and quieter days with fewer other commitments. The app is designed to solve a real coordination problem in a clean, user-friendly way.
 
 ---
 
 ## What the App Does
 
-- Imports busy events from Google Calendar
+- Requires sign-in (Google OAuth or email/password) before showing any schedule data
+- Imports a full year of busy events from Google Calendar
+- Imports `.ics` calendar files exported from Outlook, Apple Calendar, etc.
 - Allows users to manually add busy time blocks
 - Merges overlapping schedules automatically
-- Finds valid free-time windows
-- Ranks free times by quality (duration and time of day)
+- Carves out candidate meeting slots of a user-chosen length, positioned near the middle of the day
+- Ranks the top 3 candidate slots, with a crown 👑 on the best one
 - Supports group scheduling via shareable links
-- Saves schedules so data persists on refresh
+- Offers Day, Week, and Month views with full navigation
+- Saves schedules in a real database so data persists across devices and sessions
 
 ---
 
 ## Key Features
 
-### Google Calendar Integration
-- Secure OAuth login
-- Reads busy events from the user’s primary calendar
-- Automatically updates availability
+### Authentication & Security
+- Sign in with Google OAuth, or create an account with email/password (bcrypt-hashed, never stored in plaintext)
+- Every API request is authenticated with a signed session token — no calendar data is readable just by knowing someone's email or guessing a URL
+- The app shows nothing (no data, no UI) until you're signed in
+
+### Calendar Sources
+- **Google Calendar** — a full year of events synced automatically on connect
+- **.ics import** — upload a file exported from Outlook, Apple Calendar, or any other app
+- **Manual entry** — add one-off busy blocks by hand
+
+### Calendar Views
+- Day, Week, and Month views, each with Previous / Today / Next navigation
+- Click any day in Month view to jump straight into Day view for that date
+- Settings let you customize day-start/day-end hours and exclude weekends
 
 ### Smart Availability Engine
-- Merges all busy intervals into a single schedule
-- Detects free time within daily boundaries
-- Filters out short or unusable gaps
-
-### Ranked Results
-- Longer time slots score higher
-- Midday hours are prioritized
-- Results are displayed in readable durations (e.g., *2 hours 15 minutes*)
+- Merges all busy intervals into a single schedule per person
+- Finds open gaps and proposes a meeting slot of exactly your chosen length (configurable in Settings), positioned as close to the middle of the day as that gap allows
+- Between otherwise-similar options, favors the quieter day (fewer other events that day)
+- Ranks the top 3 candidate slots; the best one gets a crown 👑
 
 ### Group Scheduling
-- Create a group link
-- Combine availability from multiple users
-- Find the best shared meeting times
+- Create a short, easy-to-share group link
+- Anyone who signs in via the link joins the group and sees everyone's merged availability
+- Each member's own account controls what they share — no one needs anyone else's credentials
 
 ### Persistent State
-- Busy times and results remain saved when the page reloads
-- No account creation required
+- Backed by a real PostgreSQL database (Supabase), not just browser storage
+- Schedules, group membership, and accounts persist across devices and redeploys
 
 ---
 
@@ -62,13 +73,18 @@ Users can connect their Google Calendar, add manual busy times, and instantly se
 
 ### Backend
 - FastAPI (Python)
-- Google Calendar API
-- SQLite
+- PostgreSQL (hosted on Supabase)
+- Google Calendar API (OAuth2)
+- `bcrypt` for password hashing, `PyJWT` for session tokens
+- `icalendar` / `recurring-ical-events` for `.ics` parsing
 - Deployed on **Render**
+
+### Testing
+- `pytest` suite covering the scheduling algorithm and session-token auth (`backend/tests/`)
 
 ---
 
 ## Author
 
-**Samuel Esebor**  
+**Samuel Esebor**
 UBC Computer Engineering student, Full-stack developer with ML and microelectronics background. Checkout my linkedin at linkedin.com/in/samuel-esebor.com
